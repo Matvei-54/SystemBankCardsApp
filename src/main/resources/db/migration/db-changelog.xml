@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <include file="changes/001_CUSTOMER.xml" relativeToChangelogFile="true"/>
+    <include file="changes/002_ROLE.xml" relativeToChangelogFile="true"/>
+    <include file="changes/003_TRANSACTION.xml" relativeToChangelogFile="true"/>
+    <include file="changes/004_CARD.xml" relativeToChangelogFile="true"/>
+    <include file="changes/005_ADD_ROLE_ADMIN_AND_USER.xml" relativeToChangelogFile="true"/>
+    <include file="changes/006_ADD_ADMIN.xml" relativeToChangelogFile="true"/>
+</databaseChangeLog>
