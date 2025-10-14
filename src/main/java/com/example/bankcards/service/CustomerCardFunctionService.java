@@ -14,8 +14,8 @@ import com.example.bankcards.exception.card.CardBlockedException;
 import com.example.bankcards.exception.card.CardWithNumberNoExistsException;
 import com.example.bankcards.exception.card.InsufficientFundsException;
 import com.example.bankcards.exception.customer.*;
-import com.example.bankcards.repository.CardRepository;
-import com.example.bankcards.repository.TransactionRepository;
+import com.example.bankcards.repository.CardEntityRepository;
+import com.example.bankcards.repository.TransactionEntityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -33,9 +33,9 @@ import java.util.List;
 @Service
 public class CustomerCardFunctionService {
 
-    private final CardRepository cardRepository;
+    private final CardEntityRepository cardEntityRepository;
     private final CustomerService customerService;
-    private final TransactionRepository transactionRepository;
+    private final TransactionEntityRepository transactionEntityRepository;
     private final CardMapper cardMapper;
     private final TransactionMapper transactionMapper;
     private final IdempotencyService idempotencyService;
@@ -48,17 +48,17 @@ public class CustomerCardFunctionService {
 
         Pageable pageable = PageRequest.of(page,size, Sort.by(Sort.Direction.ASC,"createdAt"));
         if(status != null){
-            return cardRepository.findByCustomerIdAndStatus(idCustomer, status, pageable)
+            return cardEntityRepository.findByCustomerIdAndStatus(idCustomer, status, pageable)
                     .map(cardMapper::toCardResponse);
         }
 
-        return cardRepository.findByCustomerId(idCustomer, pageable).map(cardMapper::toCardResponse);
+        return cardEntityRepository.findByCustomerId(idCustomer, pageable).map(cardMapper::toCardResponse);
     }
 
     @Transactional(readOnly = true)
     public CardResponseDTO getCustomerCard(String cartNumber, String email) {
 
-        CardEntity cardEntity = cardRepository.findByCardNumber(cartNumber)
+        CardEntity cardEntity = cardEntityRepository.findByCardNumber(cartNumber)
                 .orElseThrow(()-> new CardWithNumberNoExistsException(cartNumber));
 
         if(!email.equals(cardEntity.getCustomerEntity().getEmail())){
@@ -70,7 +70,7 @@ public class CustomerCardFunctionService {
 
     @Transactional
     public String requestCardBlock(BlockCardRequestDTO blockCardDto, String idempotencyKey, String email) {
-        CardEntity cardEntity = cardRepository.findByCardNumber(blockCardDto.cardNumber())
+        CardEntity cardEntity = cardEntityRepository.findByCardNumber(blockCardDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(blockCardDto.cardNumber()));
 
         if(!email.equals(cardEntity.getCustomerEntity().getEmail())){
@@ -82,7 +82,7 @@ public class CustomerCardFunctionService {
         }
 
         cardEntity.setStatus(CardStatus.BLOCKED);
-        cardRepository.save(cardEntity);
+        cardEntityRepository.save(cardEntity);
 
         String stringResultResponse = "Card has been blocked";
         idempotencyService.saveIdempotencyKey(idempotencyKey, stringResultResponse);
@@ -92,7 +92,7 @@ public class CustomerCardFunctionService {
     @Transactional(readOnly = true)
     public List<TransactionResponseDTO> getTransactionalByCard(ShowTransactionalByCardRequestDTO Dto,
                                                                int page, int size, String idempotencyKey, String email) {
-        CardEntity cardEntity = cardRepository.findByCardNumber(Dto.cardNumber())
+        CardEntity cardEntity = cardEntityRepository.findByCardNumber(Dto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(Dto.cardNumber()));
 
         if(!email.equals(cardEntity.getCustomerEntity().getEmail())){
@@ -101,7 +101,7 @@ public class CustomerCardFunctionService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt"));
 
-        List<TransactionResponseDTO> responses = transactionRepository.findBySourceCard(cardEntity, pageable)
+        List<TransactionResponseDTO> responses = transactionEntityRepository.findBySourceCard(cardEntity, pageable)
                 .stream().map(transactionMapper::toTransactionResponse).toList();
 
         idempotencyService.saveIdempotencyKey(idempotencyKey, responses);
@@ -113,10 +113,10 @@ public class CustomerCardFunctionService {
     public TransactionResponseDTO transferBetweenCards(TransferFundsBetweenUserCardsRequestDTO transferFundsDto,
                                                        String idempotencyKey, String email) {
 
-        CardEntity cardEntityFrom = cardRepository.findByCardNumberWithLock(transferFundsDto.fromCardNumber())
+        CardEntity cardEntityFrom = cardEntityRepository.findByCardNumberWithLock(transferFundsDto.fromCardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.fromCardNumber()));
 
-        CardEntity cardEntityTo = cardRepository.findByCardNumberWithLock(transferFundsDto.toCardNumber())
+        CardEntity cardEntityTo = cardEntityRepository.findByCardNumberWithLock(transferFundsDto.toCardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.fromCardNumber()));
 
         if(!email.equals(cardEntityFrom.getCustomerEntity().getEmail())){
@@ -142,9 +142,9 @@ public class CustomerCardFunctionService {
         transferTransactionEntity.setTransactionType(TransactionType.TRANSFER);
         transferTransactionEntity.setTransactionStatus(TransactionStatus.SUCCESS);
 
-        cardRepository.save(cardEntityFrom);
-        cardRepository.save(cardEntityTo);
-        TransactionResponseDTO response = transactionMapper.toTransactionResponse(transactionRepository.save(transferTransactionEntity));
+        cardEntityRepository.save(cardEntityFrom);
+        cardEntityRepository.save(cardEntityTo);
+        TransactionResponseDTO response = transactionMapper.toTransactionResponse(transactionEntityRepository.save(transferTransactionEntity));
 
         idempotencyService.saveIdempotencyKey(idempotencyKey, response);
         return response;
@@ -153,7 +153,7 @@ public class CustomerCardFunctionService {
 
     @Transactional
     public TransactionResponseDTO withdrawalFromCard(WithdrawFundsRequestDTO withdrawDto, String idempotencyKey, String email){
-        CardEntity cardEntityFrom = cardRepository.findByCardNumberWithLock(withdrawDto.cardNumber())
+        CardEntity cardEntityFrom = cardEntityRepository.findByCardNumberWithLock(withdrawDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(withdrawDto.cardNumber()));
 
         if(!email.equals(cardEntityFrom.getCustomerEntity().getEmail())){
@@ -179,9 +179,9 @@ public class CustomerCardFunctionService {
         withdrawTransactionEntity.setTransactionType(TransactionType.DEBIT);
         withdrawTransactionEntity.setTransactionStatus(TransactionStatus.SUCCESS);
 
-        cardRepository.save(cardEntityFrom);
+        cardEntityRepository.save(cardEntityFrom);
 
-        TransactionResponseDTO response = transactionMapper.toTransactionResponse(transactionRepository.save(withdrawTransactionEntity));
+        TransactionResponseDTO response = transactionMapper.toTransactionResponse(transactionEntityRepository.save(withdrawTransactionEntity));
         idempotencyService.saveIdempotencyKey(idempotencyKey, response);
 
         return response;
@@ -192,7 +192,7 @@ public class CustomerCardFunctionService {
     public TransactionResponseDTO cardReplenishment(ReplenishmentCardRequestDTO replenishmentCardDto, String idempotencyKey,
                                                     String email) {
 
-        CardEntity cardEntity = cardRepository.findByCardNumberWithLock(replenishmentCardDto.cardNumber())
+        CardEntity cardEntity = cardEntityRepository.findByCardNumberWithLock(replenishmentCardDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(replenishmentCardDto.cardNumber()));
 
         log.info("Request email: {}, Card owner email: {}", email, cardEntity.getCustomerEntity().getEmail());
@@ -209,11 +209,11 @@ public class CustomerCardFunctionService {
         replenishTransactionEntity.setTransactionStatus(TransactionStatus.SUCCESS);
         replenishTransactionEntity.setCurrency("RUB");
         TransactionResponseDTO transactionResponseDTO = transactionMapper
-                .toTransactionResponse(transactionRepository.save(replenishTransactionEntity));
+                .toTransactionResponse(transactionEntityRepository.save(replenishTransactionEntity));
 
         replenishTransactionEntity.getTransactionStatus().toString();
 
-        cardRepository.save(cardEntity);
+        cardEntityRepository.save(cardEntity);
 
         idempotencyService.saveIdempotencyKey(idempotencyKey, transactionResponseDTO);
         return transactionResponseDTO;

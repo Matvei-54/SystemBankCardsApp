@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface TransactionRepository extends JpaRepository<TransactionEntity, Long> {
+public interface TransactionEntityRepository extends JpaRepository<TransactionEntity, Long> {
 
 
     List<TransactionEntity> findBySourceCard(CardEntity cardEntity);

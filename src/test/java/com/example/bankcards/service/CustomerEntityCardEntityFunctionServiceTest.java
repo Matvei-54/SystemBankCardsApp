@@ -31,11 +31,11 @@ import static org.mockito.Mockito.*;
 public class CustomerEntityCardEntityFunctionServiceTest {
 
     @Mock
-    private CardRepository cardRepository;
+    private CardEntityRepository cardEntityRepository;
     @Mock
     private CustomerService customerService;
     @Mock
-    private TransactionRepository transactionRepository;
+    private TransactionEntityRepository transactionEntityRepository;
     @Mock
     private CardMapper cardMapper;
     @Mock
@@ -91,7 +91,7 @@ public class CustomerEntityCardEntityFunctionServiceTest {
         Page<CardEntity> cardPage = new PageImpl<>(List.of(cardEntity));
 
         when(customerService.findCustomerByEmail(customerEmail)).thenReturn(Optional.of(customerEntity));
-        when(cardRepository.findByCustomerId(customerId, pageable)).thenReturn(cardPage);
+        when(cardEntityRepository.findByCustomerId(customerId, pageable)).thenReturn(cardPage);
         when(cardMapper.toCardResponse(cardEntity)).thenReturn(cardResponseDTO);
 
         Page<CardResponseDTO> result = service.getCustomerCards(customerEmail, null, 0, 10);
@@ -99,27 +99,27 @@ public class CustomerEntityCardEntityFunctionServiceTest {
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
         assertEquals(cardResponseDTO, result.getContent().get(0));
-        verify(cardRepository).findByCustomerId(customerId, pageable);
+        verify(cardEntityRepository).findByCustomerId(customerId, pageable);
     }
 
     @DisplayName("Вывести данные карты пользователя.")
     @Test
     void getCustomerCard_Success() {
         String cardNumber = "1234567890123456";
-        when(cardRepository.findByCardNumber(cardNumber)).thenReturn(Optional.of(cardEntity));
+        when(cardEntityRepository.findByCardNumber(cardNumber)).thenReturn(Optional.of(cardEntity));
         when(cardMapper.toCardResponse(cardEntity)).thenReturn(cardResponseDTO);
 
         CardResponseDTO result = service.getCustomerCard(cardNumber, customerEmail);
 
         assertEquals(cardResponseDTO, result);
-        verify(cardRepository).findByCardNumber(cardNumber);
+        verify(cardEntityRepository).findByCardNumber(cardNumber);
     }
 
     @DisplayName("Карта не найдена.")
     @Test
     void getCustomerCard_CardNotFound_ThrowsException() {
         String cardNumber = "1234567890123456";
-        when(cardRepository.findByCardNumber(cardNumber)).thenReturn(Optional.empty());
+        when(cardEntityRepository.findByCardNumber(cardNumber)).thenReturn(Optional.empty());
 
         assertThrows(CardWithNumberNoExistsException.class, () ->
             service.getCustomerCard(cardNumber, customerEmail));
@@ -131,13 +131,13 @@ public class CustomerEntityCardEntityFunctionServiceTest {
         String cardNumber = "1234567890123456";
         BlockCardRequestDTO request = new BlockCardRequestDTO(cardNumber);
         
-        when(cardRepository.findByCardNumber(cardNumber)).thenReturn(Optional.of(cardEntity));
+        when(cardEntityRepository.findByCardNumber(cardNumber)).thenReturn(Optional.of(cardEntity));
         
         String result = service.requestCardBlock(request, "idemKey", customerEmail);
 
         assertEquals("Card has been blocked", result);
         assertEquals(CardStatus.BLOCKED, cardEntity.getStatus());
-        verify(cardRepository).save(cardEntity);
+        verify(cardEntityRepository).save(cardEntity);
     }
 
     @DisplayName("Карта уже заблокирована")
@@ -147,7 +147,7 @@ public class CustomerEntityCardEntityFunctionServiceTest {
         cardEntity.setStatus(CardStatus.BLOCKED);
         BlockCardRequestDTO request = new BlockCardRequestDTO(cardNumber);
         
-        when(cardRepository.findByCardNumber(cardNumber)).thenReturn(Optional.of(cardEntity));
+        when(cardEntityRepository.findByCardNumber(cardNumber)).thenReturn(Optional.of(cardEntity));
 
         assertThrows(RuntimeException.class, () -> 
             service.requestCardBlock(request, "idemKey", customerEmail));
@@ -160,8 +160,8 @@ public class CustomerEntityCardEntityFunctionServiceTest {
         ShowTransactionalByCardRequestDTO request = new ShowTransactionalByCardRequestDTO(cardNumber);
         Pageable pageable = PageRequest.of(0, 10, Sort.by("createdAt"));
         
-        when(cardRepository.findByCardNumber(cardNumber)).thenReturn(Optional.of(cardEntity));
-        when(transactionRepository.findBySourceCard(cardEntity, pageable)).thenReturn(List.of(transactionEntity));
+        when(cardEntityRepository.findByCardNumber(cardNumber)).thenReturn(Optional.of(cardEntity));
+        when(transactionEntityRepository.findBySourceCard(cardEntity, pageable)).thenReturn(List.of(transactionEntity));
         when(transactionMapper.toTransactionResponse(transactionEntity)).thenReturn(transactionResponseDTO);
 
         List<TransactionResponseDTO> result = service.getTransactionalByCard(request, 0, 10, "idemKey", customerEmail);
@@ -185,9 +185,9 @@ public class CustomerEntityCardEntityFunctionServiceTest {
         TransferFundsBetweenUserCardsRequestDTO request = new TransferFundsBetweenUserCardsRequestDTO(
             fromCardNumber, toCardNumber, new BigDecimal("100.00"), "RUB");
 
-        when(cardRepository.findByCardNumberWithLock(fromCardNumber)).thenReturn(Optional.of(cardEntity));
-        when(cardRepository.findByCardNumberWithLock(toCardNumber)).thenReturn(Optional.of(cardEntityTo));
-        when(transactionRepository.save(any(TransactionEntity.class))).thenReturn(transactionEntity);
+        when(cardEntityRepository.findByCardNumberWithLock(fromCardNumber)).thenReturn(Optional.of(cardEntity));
+        when(cardEntityRepository.findByCardNumberWithLock(toCardNumber)).thenReturn(Optional.of(cardEntityTo));
+        when(transactionEntityRepository.save(any(TransactionEntity.class))).thenReturn(transactionEntity);
         when(transactionMapper.toTransactionResponse(transactionEntity)).thenReturn(transactionResponseDTO);
 
         TransactionResponseDTO result = service.transferBetweenCards(request, "idemKey", customerEmail);
@@ -195,8 +195,8 @@ public class CustomerEntityCardEntityFunctionServiceTest {
         assertEquals(transactionResponseDTO, result);
         assertEquals(new BigDecimal("900.00"), cardEntity.getBalance());
         assertEquals(new BigDecimal("600.00"), cardEntityTo.getBalance());
-        verify(cardRepository, times(2)).save(any(CardEntity.class));
-        verify(transactionRepository).save(any(TransactionEntity.class));
+        verify(cardEntityRepository, times(2)).save(any(CardEntity.class));
+        verify(transactionEntityRepository).save(any(TransactionEntity.class));
     }
 
     @DisplayName("Вывод средств с карты.")
@@ -205,16 +205,16 @@ public class CustomerEntityCardEntityFunctionServiceTest {
         String cardNumber = "1234567890123456";
         WithdrawFundsRequestDTO request = new WithdrawFundsRequestDTO(cardNumber, new BigDecimal("100.00"), "RUB");
 
-        when(cardRepository.findByCardNumberWithLock(cardNumber)).thenReturn(Optional.of(cardEntity));
-        when(transactionRepository.save(any(TransactionEntity.class))).thenReturn(transactionEntity);
+        when(cardEntityRepository.findByCardNumberWithLock(cardNumber)).thenReturn(Optional.of(cardEntity));
+        when(transactionEntityRepository.save(any(TransactionEntity.class))).thenReturn(transactionEntity);
         when(transactionMapper.toTransactionResponse(transactionEntity)).thenReturn(transactionResponseDTO);
 
         TransactionResponseDTO result = service.withdrawalFromCard(request, "idemKey", customerEmail);
 
         assertEquals(transactionResponseDTO, result);
         assertEquals(new BigDecimal("900.00"), cardEntity.getBalance());
-        verify(cardRepository).save(cardEntity);
-        verify(transactionRepository).save(any(TransactionEntity.class));
+        verify(cardEntityRepository).save(cardEntity);
+        verify(transactionEntityRepository).save(any(TransactionEntity.class));
     }
 
     @DisplayName("Операция пополнения карты.")
@@ -223,16 +223,16 @@ public class CustomerEntityCardEntityFunctionServiceTest {
         String cardNumber = "1234567890123456";
         ReplenishmentCardRequestDTO request = new ReplenishmentCardRequestDTO(cardNumber, new BigDecimal("100.00"));
 
-        when(cardRepository.findByCardNumberWithLock(cardNumber)).thenReturn(Optional.of(cardEntity));
-        when(transactionRepository.save(any(TransactionEntity.class))).thenReturn(transactionEntity);
+        when(cardEntityRepository.findByCardNumberWithLock(cardNumber)).thenReturn(Optional.of(cardEntity));
+        when(transactionEntityRepository.save(any(TransactionEntity.class))).thenReturn(transactionEntity);
         when(transactionMapper.toTransactionResponse(transactionEntity)).thenReturn(transactionResponseDTO);
 
         TransactionResponseDTO result = service.cardReplenishment(request, "idemKey", customerEmail);
 
         assertEquals(transactionResponseDTO, result);
         assertEquals(new BigDecimal("1100.00"), cardEntity.getBalance());
-        verify(cardRepository).save(cardEntity);
-        verify(transactionRepository).save(any(TransactionEntity.class));
+        verify(cardEntityRepository).save(cardEntity);
+        verify(transactionEntityRepository).save(any(TransactionEntity.class));
     }
 
     @DisplayName("Недостаточно рседств для перервода.")
@@ -250,8 +250,8 @@ public class CustomerEntityCardEntityFunctionServiceTest {
         TransferFundsBetweenUserCardsRequestDTO request = new TransferFundsBetweenUserCardsRequestDTO(
             fromCardNumber, toCardNumber, new BigDecimal("2000.00"), "RUB");
 
-        when(cardRepository.findByCardNumberWithLock(fromCardNumber)).thenReturn(Optional.of(cardEntity));
-        when(cardRepository.findByCardNumberWithLock(toCardNumber)).thenReturn(Optional.of(cardEntityTo));
+        when(cardEntityRepository.findByCardNumberWithLock(fromCardNumber)).thenReturn(Optional.of(cardEntity));
+        when(cardEntityRepository.findByCardNumberWithLock(toCardNumber)).thenReturn(Optional.of(cardEntityTo));
 
         assertThrows(InsufficientFundsException.class, () -> 
             service.transferBetweenCards(request, "idemKey", customerEmail));

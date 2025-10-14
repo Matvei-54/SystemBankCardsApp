@@ -5,7 +5,7 @@ import com.example.bankcards.dto.CustomerRegistrationRequestDTO;
 import com.example.bankcards.entity.CustomerEntity;
 import com.example.bankcards.entity.mapper.CustomerMapper;
 import com.example.bankcards.exception.customer.CustomerAlreadyRegisteredException;
-import com.example.bankcards.repository.CustomerRepository;
+import com.example.bankcards.repository.CustomerEntityRepository;
 import com.example.bankcards.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ import java.util.Optional;
 @Service
 public class CustomerService {
 
-    private final CustomerRepository customerRepository;
+    private final CustomerEntityRepository customerEntityRepository;
     private final CustomerMapper customerMapper;
     private final RoleRepository roleRepository;
     private final Argon2PasswordEncoder argon2PasswordEncoder;
@@ -35,7 +35,7 @@ public class CustomerService {
      */
     @Transactional
     public CustomerRegistrationResponseDTO registerCustomer(CustomerRegistrationRequestDTO customerDto, String idempotencyKey) {
-        if(customerRepository.findByEmail(customerDto.email()).isPresent()) {
+        if(customerEntityRepository.findByEmail(customerDto.email()).isPresent()) {
             log.error("Customer with email {} already exists", customerDto.email());
             throw new CustomerAlreadyRegisteredException(customerDto.email());
         }
@@ -50,19 +50,19 @@ public class CustomerService {
         customerEntity.setCredentialsNonExpired(true);
         customerEntity.setEnabled(true);
         CustomerRegistrationResponseDTO response = customerMapper
-                .toCustomerRegistrationResponse(customerRepository.save(customerEntity));
+                .toCustomerRegistrationResponse(customerEntityRepository.save(customerEntity));
         idempotencyService.saveIdempotencyKey(idempotencyKey, response);
         return response;
     }
 
     @Transactional(readOnly = true)
     public Optional<CustomerEntity> findCustomerByEmail(String email) {
-        return customerRepository.findByEmail(email);
+        return customerEntityRepository.findByEmail(email);
     }
 
     @Transactional(readOnly = true)
     public Optional<CustomerEntity> findCustomerById(Long id) {
-        return customerRepository.findById(id);
+        return customerEntityRepository.findById(id);
     }
 
 }

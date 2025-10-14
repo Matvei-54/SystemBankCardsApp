@@ -1,7 +1,7 @@
 package com.example.bankcards.entity;
 
 
-import com.example.bankcards.entity.enums.CardStatus;
+import com.example.bankcards.entity.enums.*;
 import com.example.bankcards.entity.enums.converter.CardStatusConverter;
 import com.example.bankcards.entity.operations.TransactionEntity;
 import com.example.bankcards.util.CardNumberEncryptorConverter;
@@ -45,7 +45,8 @@ public class CardEntity extends BaseEntity {
     private BigDecimal balance;
 
     @Column(name = "currency")
-    private String currency;
+    @Enumerated(EnumType.STRING)
+    private Currency currency;
 
     @OneToMany(mappedBy = "sourceCard", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TransactionEntity> history;
