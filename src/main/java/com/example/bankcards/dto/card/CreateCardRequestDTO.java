@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.*;
 import javax.validation.constraints.*;
 import java.time.LocalDate;
 
-public record CreateCardRequestDto(
+public record CreateCardRequestDTO(
         @NotNull
         @Pattern(regexp = "\\d{16}", message = "Card number must be 16 digits")
         String cardNumber,

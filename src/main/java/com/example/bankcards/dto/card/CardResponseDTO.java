@@ -10,7 +10,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @Setter
 @Getter
-public class CardResponse {
+public class CardResponseDTO {
 
     private String cardNumber;
     private String cardHolder;

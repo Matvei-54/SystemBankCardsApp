@@ -1,7 +1,7 @@
 package com.example.bankcards.service;
 
 import com.example.bankcards.dto.card.*;
-import com.example.bankcards.dto.transaction.TransactionResponse;
+import com.example.bankcards.dto.transaction.TransactionResponseDTO;
 import com.example.bankcards.entity.*;
 import com.example.bankcards.entity.enums.CardStatus;
 import com.example.bankcards.entity.mapper.CardMapper;
@@ -31,12 +31,11 @@ public class AdminCardFunctionService {
     private final TransactionRepository transactionRepository;
     private final TransactionMapper transactionMapper;
     private final IdempotencyService idempotencyService;
-    private final long TIME_LIFE_RECORD_DB = 3600;
     private final CardNumberEncryptorUtil cardEncryptorUtil;
 
 
     @Transactional
-    public CardResponse createCard(CreateCardRequestDto createCardDto, String idempotencyKey) {
+    public CardResponseDTO createCard(CreateCardRequestDTO createCardDto, String idempotencyKey) {
 
         if(cardRepository.findByCardNumber(createCardDto.cardNumber()).isPresent()) {
             throw new CardWithNumberAlreadyExistsException(createCardDto.cardNumber());
@@ -56,64 +55,57 @@ public class AdminCardFunctionService {
         cardEntity.setBalance(BigDecimal.ZERO);
         cardEntity.setCurrency("RUB");
 
-        CardResponse response = cardMapper.toCardResponse(cardRepository.save(cardEntity));
+        cardEntity = cardRepository.save(cardEntity);
+
+        CardResponseDTO response = cardMapper.toCardResponse(cardEntity);
         idempotencyService.saveIdempotencyKey(idempotencyKey, response);
 
         return response;
     }
 
-    public CardResponse updateCard(UpdateCardRequestDto updateDto) {
+    public CardResponseDTO updateCard(UpdateCardRequestDTO updateDto) {
         CardEntity cardEntity = cardRepository.findByCardNumber(updateDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(updateDto.cardNumber()));
 
         cardEntity.setCardNumber(updateDto.newCardNumber());
         cardEntity.setExpiryDate(updateDto.newExpiryDate());
 
-        return cardMapper.toCardResponse(cardRepository.save(cardEntity));
+        cardEntity = cardRepository.save(cardEntity);
+
+        return cardMapper.toCardResponse(cardEntity);
     }
 
     @Transactional
-    public String blockCard(BlockCardRequestDto blockCardDto, String idempotencyKey) {
+    public void blockCard(BlockCardRequestDTO blockCardDto, String idempotencyKey) {
         CardEntity cardEntity = cardRepository.findByCardNumber(blockCardDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(blockCardDto.cardNumber()));
         cardEntity.setStatus(CardStatus.BLOCKED);
         cardRepository.save(cardEntity);
-
-        String response = "Card blocked";
-        idempotencyService.saveIdempotencyKey(idempotencyKey, response);
-        return response;
     }
 
     @Transactional
-    public String activateCard(ActivateCardRequestDto activateCardDto, String idempotencyKey) {
+    public void activateCard(ActivateCardRequestDTO activateCardDto, String idempotencyKey) {
         CardEntity cardEntity = cardRepository.findByCardNumber(activateCardDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(activateCardDto.cardNumber()));
         cardEntity.setStatus(CardStatus.ACTIVE);
         cardRepository.save(cardEntity);
-
-        String response = "Card activated successfully";
-        idempotencyService.saveIdempotencyKey(idempotencyKey, response);
-        return response;
     }
 
     @Transactional
-    public String deleteCard(DeleteCardRequestDto deleteCardDto, String idempotencyKey) {
+    public void deleteCard(DeleteCardRequestDTO deleteCardDto, String idempotencyKey) {
         CardEntity cardEntity = cardRepository.findByCardNumber(deleteCardDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(deleteCardDto.cardNumber()));
 
         cardRepository.deleteById(cardEntity.getId());
-        String response = "Card deleted";
-        idempotencyService.saveIdempotencyKey(idempotencyKey, response);
-        return response;
     }
 
     @Transactional(readOnly = true)
-    public List<CardResponse> getAllCards() {
+    public List<CardResponseDTO> getAllCards() {
         return cardRepository.findAll().stream().map(cardMapper::toCardResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public List<TransactionResponse> getCardTransactions(ShowTransactionalByCardRequestDto cardDto) {
+    public List<TransactionResponseDTO> getCardTransactions(ShowTransactionalByCardRequestDTO cardDto) {
         CardEntity cardEntity = cardRepository.findByCardNumber(cardDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(cardDto.cardNumber()));
         return transactionRepository.findBySourceCard(cardEntity).stream().map(transactionMapper::toTransactionResponse).toList();

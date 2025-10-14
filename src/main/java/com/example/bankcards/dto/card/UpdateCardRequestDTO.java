@@ -5,7 +5,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import java.time.LocalDate;
 
-public record UpdateCardRequestDto(
+public record UpdateCardRequestDTO(
         @NotNull
         @Pattern(regexp = "\\d{16}", message = "Card number must be 16 digits")
         String cardNumber,

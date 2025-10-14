@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Setter
 @Getter
-public class TransactionResponse {
+public class TransactionResponseDTO {
 
     private BigDecimal amount;
 

@@ -2,7 +2,7 @@ package com.example.bankcards.controller;
 
 
 import com.example.bankcards.dto.card.*;
-import com.example.bankcards.dto.transaction.TransactionResponse;
+import com.example.bankcards.dto.transaction.TransactionResponseDTO;
 import com.example.bankcards.entity.enums.CardStatus;
 import com.example.bankcards.security.*;
 import com.example.bankcards.service.CustomerCardFunctionService;
@@ -31,7 +31,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/api/cards")
 @RestController
-public class CardCustomerController {
+public class CustomerCardFunctionController {
 
     private final CustomerCardFunctionService cardFunctionService;
     private final IdempotencyService idempotencyService;
@@ -45,8 +45,8 @@ public class CardCustomerController {
     @Operation(summary = "Получить данные карты", description = "В ответе возвращается dto.")
     @Tag(name = "get", description = "Card API")
     @GetMapping("/get/{cardNumber}")
-    public CardResponse getCard(@PathVariable String cardNumber,
-                                HttpServletRequest request) {
+    public CardResponseDTO getCard(@PathVariable String cardNumber,
+                                   HttpServletRequest request) {
         return cardFunctionService.getCustomerCard(cardNumber, jwtUtil.extractUsername(request.getHeader("Authorization")
                 .substring(7)));
     }
@@ -57,7 +57,7 @@ public class CardCustomerController {
     @Operation(summary = "Получить список карт", description = "В ответе возвращается List dto.")
     @Tag(name = "get", description = "Card API")
     @GetMapping()
-    public Page<CardResponse> getCards(
+    public Page<CardResponseDTO> getCards(
             @RequestParam(required = false) CardStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -76,12 +76,12 @@ public class CardCustomerController {
     @Operation(summary = "Выполнить перевод между своими картами", description = "В ответе возвращается dto перевода.")
     @Tag(name = "post", description = "Card API")
     @PostMapping("/transfer")
-    public TransactionResponse transfer(@Valid @RequestBody TransferFundsBetweenUserCardsRequest transferDto,
-                                        @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
-                                        HttpServletRequest request) {
+    public TransactionResponseDTO transfer(@Valid @RequestBody TransferFundsBetweenUserCardsRequestDTO transferDto,
+                                           @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
+                                           HttpServletRequest request) {
         if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
 
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponse.class);
+            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponseDTO.class);
         }
         return cardFunctionService.transferBetweenCards(transferDto, idempotencyKey, jwtUtil.extractUsername(request
                 .getHeader("Authorization").substring(7)));
@@ -96,11 +96,11 @@ public class CardCustomerController {
     @Operation(summary = "Выполнить вывод средств с карты", description = "В ответе возвращается dto транзакции вывода.")
     @Tag(name = "post", description = "Card API")
     @PostMapping("/withdraw")
-    public TransactionResponse withdraw(@Valid @RequestBody WithdrawFundsRequest withdrawDto,
-                                        @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
-                                        HttpServletRequest request) {
+    public TransactionResponseDTO withdraw(@Valid @RequestBody WithdrawFundsRequestDTO withdrawDto,
+                                           @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
+                                           HttpServletRequest request) {
         if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponse.class);
+            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponseDTO.class);
         }
         return cardFunctionService.withdrawalFromCard(withdrawDto, idempotencyKey, jwtUtil.extractUsername(request
                 .getHeader("Authorization").substring(7)));
@@ -113,9 +113,9 @@ public class CardCustomerController {
     @Operation(summary = "Получить список транзакций по карте", description = "В ответе возвращается List dto транзакций.")
     @Tag(name = "get", description = "Card API")
     @GetMapping("/transactions")
-    public List<TransactionResponse> getTransactions(
+    public List<TransactionResponseDTO> getTransactions(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size, ShowTransactionalByCardRequestDto historyTransactionsDto,
+            @RequestParam(defaultValue = "10") int size, ShowTransactionalByCardRequestDTO historyTransactionsDto,
             @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
             HttpServletRequest request) {
 
@@ -132,7 +132,7 @@ public class CardCustomerController {
     @Operation(summary = "Заблокировать карту", description = "В ответе ничего не возвращается.")
     @Tag(name = "put", description = "Card API")
     @PutMapping("/block")
-    public String blockCard(@Valid @RequestBody BlockCardRequestDto blockCardDto,
+    public String blockCard(@Valid @RequestBody BlockCardRequestDTO blockCardDto,
                             @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
                             HttpServletRequest request){
 
@@ -153,13 +153,13 @@ public class CardCustomerController {
     @Operation(summary = "Пополнить баланс карты", description = "В ответе ничего не возвращается.")
     @Tag(name = "put", description = "Card API")
     @PutMapping("/replenishment")
-    public TransactionResponse replenishmentCard(@Valid @RequestBody ReplenishmentCardRequest replenishmentCardDto,
-                                                 @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
-                                                 HttpServletRequest request){
+    public TransactionResponseDTO replenishmentCard(@Valid @RequestBody ReplenishmentCardRequestDTO replenishmentCardDto,
+                                                    @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
+                                                    HttpServletRequest request){
 
         if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
 
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponse.class);
+            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponseDTO.class);
         }
         return cardFunctionService.cardReplenishment(replenishmentCardDto, idempotencyKey,
                 jwtUtil.extractUsername(request.getHeader("Authorization").substring(7)));

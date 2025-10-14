@@ -1,7 +1,7 @@
 package com.example.bankcards.service;
 
 import com.example.bankcards.dto.*;
-import com.example.bankcards.dto.CustomerRegistrationRequestDto;
+import com.example.bankcards.dto.CustomerRegistrationRequestDTO;
 import com.example.bankcards.entity.CustomerEntity;
 import com.example.bankcards.entity.mapper.CustomerMapper;
 import com.example.bankcards.exception.customer.CustomerAlreadyRegisteredException;
@@ -34,7 +34,7 @@ public class CustomerService {
      * @return dto зарегистрированного пользователя
      */
     @Transactional
-    public CustomerRegistrationResponse registerCustomer(CustomerRegistrationRequestDto customerDto, String idempotencyKey) {
+    public CustomerRegistrationResponseDTO registerCustomer(CustomerRegistrationRequestDTO customerDto, String idempotencyKey) {
         if(customerRepository.findByEmail(customerDto.email()).isPresent()) {
             log.error("Customer with email {} already exists", customerDto.email());
             throw new CustomerAlreadyRegisteredException(customerDto.email());
@@ -49,7 +49,7 @@ public class CustomerService {
         customerEntity.setAccountNonLocked(true);
         customerEntity.setCredentialsNonExpired(true);
         customerEntity.setEnabled(true);
-        CustomerRegistrationResponse response = customerMapper
+        CustomerRegistrationResponseDTO response = customerMapper
                 .toCustomerRegistrationResponse(customerRepository.save(customerEntity));
         idempotencyService.saveIdempotencyKey(idempotencyKey, response);
         return response;

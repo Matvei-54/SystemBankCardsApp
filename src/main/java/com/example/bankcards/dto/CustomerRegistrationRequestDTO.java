@@ -7,7 +7,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 
-public record CustomerRegistrationRequestDto(
+public record CustomerRegistrationRequestDTO(
         @Schema(description = "Имя пользователя")
         @NotNull(message = "Name should not be empty.")
         @Size(min = 6, max = 50, message = "FirstName should between 6 and 50 characters.")

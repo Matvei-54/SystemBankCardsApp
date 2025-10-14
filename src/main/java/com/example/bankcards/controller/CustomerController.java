@@ -2,7 +2,7 @@ package com.example.bankcards.controller;
 
 
 import com.example.bankcards.dto.*;
-import com.example.bankcards.dto.CustomerRegistrationRequestDto;
+import com.example.bankcards.dto.CustomerRegistrationRequestDTO;
 import com.example.bankcards.service.AuthService;
 import com.example.bankcards.service.CustomerService;
 import com.example.bankcards.service.IdempotencyService;
@@ -36,10 +36,10 @@ public class CustomerController {
     @Operation(summary = "Зарегистрировать нового пользователя", description = "В ответе возвращается dto.")
     @Tag(name = "sign up", description = "Customer")
     @PostMapping("/registration")
-    public CustomerRegistrationResponse customerRegistration(@Valid @RequestBody CustomerRegistrationRequestDto customerReqDto,
-                                                             @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey){
+    public CustomerRegistrationResponseDTO customerRegistration(@Valid @RequestBody CustomerRegistrationRequestDTO customerReqDto,
+                                                                @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey){
         if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CustomerRegistrationResponse.class);
+            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CustomerRegistrationResponseDTO.class);
         }
         return customerService.registerCustomer(customerReqDto, idempotencyKey);
     }

@@ -22,7 +22,7 @@ import javax.validation.constraints.*;
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/cards")
 @RestController
-public class AdminCardController {
+public class AdminCardFunctionController {
 
     private final AdminCardFunctionService adminCardFunctionService;
     private final IdempotencyService idempotencyService;
@@ -36,12 +36,12 @@ public class AdminCardController {
     @Operation(summary = "Создать карту", description = "В ответе возвращается dto карты")
     @Tag(name = "admin", description = "Card API")
     @PostMapping("/create")
-    public CardResponse createCard(@Valid @RequestBody CreateCardRequestDto request,
-                                   @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
+    public CardResponseDTO createCard(@Valid @RequestBody CreateCardRequestDTO request,
+                                      @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
 
         if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
 
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CardResponse.class);
+            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CardResponseDTO.class);
         }
         return adminCardFunctionService.createCard(request, idempotencyKey);
     }
@@ -56,12 +56,12 @@ public class AdminCardController {
     @Operation(summary = "Изменение номера и срока действия карты", description = "В ответе возвращается dto карты")
     @Tag(name = "admin", description = "Card API")
     @PutMapping("/update")
-    public CardResponse updateCard(@Valid @RequestBody UpdateCardRequestDto request,
-                                   @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
+    public CardResponseDTO updateCard(@Valid @RequestBody UpdateCardRequestDTO request,
+                                      @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
 
         if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
 
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CardResponse.class);
+            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CardResponseDTO.class);
         }
         return adminCardFunctionService.updateCard(request);
     }
@@ -77,14 +77,10 @@ public class AdminCardController {
     @Tag(name = "delete", description = "Card API")
     @DeleteMapping("/delete")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public String deleteCard(@Valid @RequestBody DeleteCardRequestDto request,
+    public void deleteCard(@Valid @RequestBody DeleteCardRequestDTO request,
                              @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
 
-        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, String.class);
-        }
-
-        return adminCardFunctionService.deleteCard(request, idempotencyKey);
+        adminCardFunctionService.deleteCard(request, idempotencyKey);
     }
 
     /**
@@ -96,13 +92,10 @@ public class AdminCardController {
     @Operation(summary = "Активировать карту", description = "В ответе ничего не возвращается.")
     @Tag(name = "admin", description = "Card API")
     @PostMapping("/activate")
-    public String activateCard(@Valid @RequestBody ActivateCardRequestDto request,
+    public void activateCard(@Valid @RequestBody ActivateCardRequestDTO request,
                                @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
 
-        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, String.class);
-        }
-        return adminCardFunctionService.activateCard(request, idempotencyKey);
+        adminCardFunctionService.activateCard(request, idempotencyKey);
     }
 
     /**
@@ -114,12 +107,9 @@ public class AdminCardController {
     @Operation(summary = "Заблокировать карту", description = "В ответе ничего не возвращается.")
     @Tag(name = "admin", description = "Card API")
     @PostMapping("/blocked")
-    public String blockCard(@Valid @RequestBody BlockCardRequestDto request,
+    public void blockCard(@Valid @RequestBody BlockCardRequestDTO request,
                             @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
 
-        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, String.class);
-        }
-        return adminCardFunctionService.blockCard(request, idempotencyKey);
+        adminCardFunctionService.blockCard(request, idempotencyKey);
     }
 }

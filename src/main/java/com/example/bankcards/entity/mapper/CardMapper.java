@@ -1,6 +1,6 @@
 package com.example.bankcards.entity.mapper;
 
-import com.example.bankcards.dto.card.CardResponse;
+import com.example.bankcards.dto.card.CardResponseDTO;
 import com.example.bankcards.entity.CardEntity;
 import org.mapstruct.*;
 
@@ -9,7 +9,7 @@ public interface CardMapper {
 
     @Mapping(target = "cardHolder", expression = "java(card.getCustomer().getName())")
     @Mapping(target = "cardNumber", source = "cardNumber", qualifiedByName = "convertCardNumberToMask")
-    CardResponse toCardResponse(CardEntity cardEntity);
+    CardResponseDTO toCardResponse(CardEntity cardEntity);
 
 
     @Named("convertCardNumberToMask")
