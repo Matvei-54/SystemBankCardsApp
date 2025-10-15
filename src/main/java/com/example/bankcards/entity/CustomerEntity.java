@@ -14,6 +14,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Setter
 @Getter
+@Table(name = "customer_entity")
 public class CustomerEntity extends BaseEntity {
 
     @Id
@@ -31,7 +32,7 @@ public class CustomerEntity extends BaseEntity {
     @Column(name = "password")
     private String password;
 
-    @OneToMany(mappedBy = "customer")
+    @OneToMany(mappedBy = "customerEntity")
     private List<CardEntity> cardEntities;
 
     @ManyToMany

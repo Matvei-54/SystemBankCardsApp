@@ -12,7 +12,8 @@ import java.util.List;
 public interface TransactionEntityRepository extends JpaRepository<TransactionEntity, Long> {
 
 
-    List<TransactionEntity> findBySourceCard(CardEntity cardEntity);
+    List<TransactionEntity> findBySourceCardEntity(CardEntity cardEntity);
 
-    List<TransactionEntity> findBySourceCard(CardEntity cardEntity, Pageable pageable);
+    List<TransactionEntity> findBySourceCardEntity(CardEntity cardEntity, Pageable pageable);
 }
+

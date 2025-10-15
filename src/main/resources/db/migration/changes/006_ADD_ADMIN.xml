@@ -7,7 +7,7 @@
 
     <changeSet id="ADD_ADMIN" author="Matvei">
 
-        <insert tableName="customerEntity">
+        <insert tableName="customer_entity">
             <column name="id" value="1" />
             <column name="name" value="admin"/>
             <column name="email" value="admin@syscard.com"/>

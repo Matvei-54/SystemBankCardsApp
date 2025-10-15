@@ -7,8 +7,8 @@ import com.example.bankcards.entity.CardEntity;
 
 import com.example.bankcards.entity.enums.TransactionStatus;
 import com.example.bankcards.entity.enums.TransactionType;
-import com.example.bankcards.entity.mapper.CardMapper;
-import com.example.bankcards.entity.mapper.TransactionMapper;
+import com.example.bankcards.entity.mapper.CardEntityMapper;
+import com.example.bankcards.entity.mapper.TransactionEntityMapper;
 import com.example.bankcards.entity.operations.TransactionEntity;
 import com.example.bankcards.exception.card.CardBlockedException;
 import com.example.bankcards.exception.card.CardWithNumberNoExistsException;
@@ -36,8 +36,8 @@ public class CustomerCardFunctionService {
     private final CardEntityRepository cardEntityRepository;
     private final CustomerService customerService;
     private final TransactionEntityRepository transactionEntityRepository;
-    private final CardMapper cardMapper;
-    private final TransactionMapper transactionMapper;
+    private final CardEntityMapper cardEntityMapper;
+    private final TransactionEntityMapper transactionEntityMapper;
     private final IdempotencyService idempotencyService;
 
     @Transactional(readOnly = true)
@@ -48,11 +48,11 @@ public class CustomerCardFunctionService {
 
         Pageable pageable = PageRequest.of(page,size, Sort.by(Sort.Direction.ASC,"createdAt"));
         if(status != null){
-            return cardEntityRepository.findByCustomerIdAndStatus(idCustomer, status, pageable)
-                    .map(cardMapper::toCardResponse);
+            return cardEntityRepository.findByCustomerEntityIdAndStatus(idCustomer, status, pageable)
+                    .map(cardEntityMapper::toCardResponse);
         }
 
-        return cardEntityRepository.findByCustomerId(idCustomer, pageable).map(cardMapper::toCardResponse);
+        return cardEntityRepository.findByCustomerEntityId(idCustomer, pageable).map(cardEntityMapper::toCardResponse);
     }
 
     @Transactional(readOnly = true)
@@ -65,7 +65,7 @@ public class CustomerCardFunctionService {
             throw new NoAccessToOtherDataException();
         }
 
-        return cardMapper.toCardResponse(cardEntity);
+        return cardEntityMapper.toCardResponse(cardEntity);
     }
 
     @Transactional
@@ -101,8 +101,8 @@ public class CustomerCardFunctionService {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt"));
 
-        List<TransactionResponseDTO> responses = transactionEntityRepository.findBySourceCard(cardEntity, pageable)
-                .stream().map(transactionMapper::toTransactionResponse).toList();
+        List<TransactionResponseDTO> responses = transactionEntityRepository.findBySourceCardEntity(cardEntity, pageable)
+                .stream().map(transactionEntityMapper::toTransactionResponse).toList();
 
         idempotencyService.saveIdempotencyKey(idempotencyKey, responses);
         return responses;
@@ -117,7 +117,7 @@ public class CustomerCardFunctionService {
                 .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.fromCardNumber()));
 
         CardEntity cardEntityTo = cardEntityRepository.findByCardNumberWithLock(transferFundsDto.toCardNumber())
-                .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.fromCardNumber()));
+                .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.toCardNumber()));
 
         if(!email.equals(cardEntityFrom.getCustomerEntity().getEmail())){
             throw new NoAccessToOtherDataException();
@@ -144,7 +144,7 @@ public class CustomerCardFunctionService {
 
         cardEntityRepository.save(cardEntityFrom);
         cardEntityRepository.save(cardEntityTo);
-        TransactionResponseDTO response = transactionMapper.toTransactionResponse(transactionEntityRepository.save(transferTransactionEntity));
+        TransactionResponseDTO response = transactionEntityMapper.toTransactionResponse(transactionEntityRepository.save(transferTransactionEntity));
 
         idempotencyService.saveIdempotencyKey(idempotencyKey, response);
         return response;
@@ -181,7 +181,7 @@ public class CustomerCardFunctionService {
 
         cardEntityRepository.save(cardEntityFrom);
 
-        TransactionResponseDTO response = transactionMapper.toTransactionResponse(transactionEntityRepository.save(withdrawTransactionEntity));
+        TransactionResponseDTO response = transactionEntityMapper.toTransactionResponse(transactionEntityRepository.save(withdrawTransactionEntity));
         idempotencyService.saveIdempotencyKey(idempotencyKey, response);
 
         return response;
@@ -208,7 +208,7 @@ public class CustomerCardFunctionService {
         replenishTransactionEntity.setTransactionType(TransactionType.CREDIT);
         replenishTransactionEntity.setTransactionStatus(TransactionStatus.SUCCESS);
         replenishTransactionEntity.setCurrency("RUB");
-        TransactionResponseDTO transactionResponseDTO = transactionMapper
+        TransactionResponseDTO transactionResponseDTO = transactionEntityMapper
                 .toTransactionResponse(transactionEntityRepository.save(replenishTransactionEntity));
 
         replenishTransactionEntity.getTransactionStatus().toString();

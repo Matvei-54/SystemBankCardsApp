@@ -5,7 +5,7 @@ import com.example.bankcards.entity.CustomerEntity;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
-public interface CustomerMapper {
+public interface CustomerEntityMapper {
 
     CustomerRegistrationResponseDTO toCustomerRegistrationResponse(CustomerEntity customerEntity);
 }

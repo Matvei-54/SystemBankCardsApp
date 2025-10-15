@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Setter
 @Getter
+@Table(name = "transaction_entity")
 public class TransactionEntity extends BaseEntity {
 
     @Id
@@ -45,5 +46,4 @@ public class TransactionEntity extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "target_card_id")
     private CardEntity targetCardEntity;
-
 }

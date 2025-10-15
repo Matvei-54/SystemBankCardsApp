@@ -3,7 +3,7 @@ package com.example.bankcards.service;
 import com.example.bankcards.dto.*;
 import com.example.bankcards.dto.CustomerRegistrationRequestDTO;
 import com.example.bankcards.entity.CustomerEntity;
-import com.example.bankcards.entity.mapper.CustomerMapper;
+import com.example.bankcards.entity.mapper.CustomerEntityMapper;
 import com.example.bankcards.exception.customer.CustomerAlreadyRegisteredException;
 import com.example.bankcards.repository.CustomerEntityRepository;
 import com.example.bankcards.repository.RoleRepository;
@@ -22,7 +22,7 @@ import java.util.Optional;
 public class CustomerService {
 
     private final CustomerEntityRepository customerEntityRepository;
-    private final CustomerMapper customerMapper;
+    private final CustomerEntityMapper customerEntityMapper;
     private final RoleRepository roleRepository;
     private final Argon2PasswordEncoder argon2PasswordEncoder;
     private final IdempotencyService idempotencyService;
@@ -49,7 +49,7 @@ public class CustomerService {
         customerEntity.setAccountNonLocked(true);
         customerEntity.setCredentialsNonExpired(true);
         customerEntity.setEnabled(true);
-        CustomerRegistrationResponseDTO response = customerMapper
+        CustomerRegistrationResponseDTO response = customerEntityMapper
                 .toCustomerRegistrationResponse(customerEntityRepository.save(customerEntity));
         idempotencyService.saveIdempotencyKey(idempotencyKey, response);
         return response;

@@ -5,10 +5,11 @@ import com.example.bankcards.entity.CardEntity;
 import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
-public interface CardMapper {
+public interface CardEntityMapper {
 
-    @Mapping(target = "cardHolder", expression = "java(card.getCustomer().getName())")
+    @Mapping(target = "cardHolder", expression = "java(cardEntity.getCustomerEntity().getName())")
     @Mapping(target = "cardNumber", source = "cardNumber", qualifiedByName = "convertCardNumberToMask")
+    @Mapping(target = "currency", expression = "java(cardEntity.getCurrency().toString())")
     CardResponseDTO toCardResponse(CardEntity cardEntity);
 
 

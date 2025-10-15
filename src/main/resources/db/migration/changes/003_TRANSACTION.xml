@@ -9,7 +9,7 @@
 
         <createSequence cycle="false" dataType="bigint" incrementBy="1" maxValue="9223372036854775807" minValue="1" sequenceName="transaction_main_sequence" startValue="1"/>
 
-        <createTable tableName="transactionEntity">
+        <createTable tableName="transaction_entity">
             <column name="id" type="BIGINT">
                 <constraints primaryKey="true"/>
             </column>

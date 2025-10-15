@@ -18,6 +18,7 @@ import java.util.List;
 @Setter
 @Getter
 @Builder
+@Table(name = "card_entity")
 public class CardEntity extends BaseEntity {
 
     @Id
@@ -48,6 +49,6 @@ public class CardEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Currency currency;
 
-    @OneToMany(mappedBy = "sourceCard", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "sourceCardEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TransactionEntity> history;
 }

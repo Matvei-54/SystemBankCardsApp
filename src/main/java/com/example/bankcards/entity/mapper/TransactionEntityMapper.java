@@ -6,8 +6,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
-public interface TransactionMapper {
+public interface TransactionEntityMapper {
 
-    @Mapping(target = "statusTransaction", expression = "java(transaction.getTransactionStatus().toString())")
+    @Mapping(target = "statusTransaction", expression = "java(transactionEntity.getTransactionStatus().toString())")
     TransactionResponseDTO toTransactionResponse(TransactionEntity transactionEntity);
 }

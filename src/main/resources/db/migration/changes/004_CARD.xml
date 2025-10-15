@@ -9,7 +9,7 @@
 
         <createSequence cycle="false" dataType="bigint" incrementBy="1" maxValue="9223372036854775807" minValue="1" sequenceName="card_main_sequence" startValue="1"/>
 
-        <createTable tableName="cardEntity">
+        <createTable tableName="card_entity">
             <column name="id" type="BIGINT">
                 <constraints primaryKey="true"/>
             </column>
@@ -49,10 +49,10 @@
             <column name="version" type="INT" defaultValue="0"/>
         </createTable>
 
-        <addForeignKeyConstraint baseTableName="cardEntity" baseColumnNames="owner_id" constraintName="fk_owner_id" referencedTableName="customerEntity"
+        <addForeignKeyConstraint baseTableName="card_entity" baseColumnNames="owner_id" constraintName="fk_owner_id" referencedTableName="customer_entity"
                                  referencedColumnNames="id"/>
 
-        <addForeignKeyConstraint baseTableName="cardEntity" baseColumnNames="transaction_id" constraintName="fk_transaction_id" referencedTableName="transactionEntity"
+        <addForeignKeyConstraint baseTableName="card_entity" baseColumnNames="transaction_id" constraintName="fk_transaction_id" referencedTableName="transaction_entity"
                                  referencedColumnNames="id"/>
 
     </changeSet>

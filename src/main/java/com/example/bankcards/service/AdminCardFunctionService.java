@@ -4,8 +4,8 @@ import com.example.bankcards.dto.card.*;
 import com.example.bankcards.dto.transaction.TransactionResponseDTO;
 import com.example.bankcards.entity.*;
 import com.example.bankcards.entity.enums.*;
-import com.example.bankcards.entity.mapper.CardMapper;
-import com.example.bankcards.entity.mapper.TransactionMapper;
+import com.example.bankcards.entity.mapper.CardEntityMapper;
+import com.example.bankcards.entity.mapper.TransactionEntityMapper;
 import com.example.bankcards.exception.card.CardWithNumberAlreadyExistsException;
 import com.example.bankcards.exception.card.CardWithNumberNoExistsException;
 import com.example.bankcards.exception.customer.CustomerNotFoundException;
@@ -14,6 +14,7 @@ import com.example.bankcards.repository.TransactionEntityRepository;
 import com.example.bankcards.util.CardNumberEncryptorUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,15 +28,20 @@ public class AdminCardFunctionService {
 
     private final CardEntityRepository cardEntityRepository;
     private final CustomerService customerService;
-    private final CardMapper cardMapper;
+    private final CardEntityMapper cardEntityMapper;
     private final TransactionEntityRepository transactionEntityRepository;
-    private final TransactionMapper transactionMapper;
+    private final TransactionEntityMapper transactionEntityMapper;
     private final IdempotencyService idempotencyService;
     private final CardNumberEncryptorUtil cardEncryptorUtil;
 
 
+    @Cacheable(value = "idempotent:create-card", key = "#idempotencyKey", unless = "#result == null")
     @Transactional
     public CardResponseDTO createCard(CreateCardRequestDTO createCardDto, String idempotencyKey) {
+
+        if(idempotencyService.idempotencyKeyCheck(idempotencyKey)){
+            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CardResponseDTO.class);
+        }
 
         if(cardEntityRepository.findByCardNumber(createCardDto.cardNumber()).isPresent()) {
             throw new CardWithNumberAlreadyExistsException(createCardDto.cardNumber());
@@ -55,12 +61,10 @@ public class AdminCardFunctionService {
 
         cardEntity = cardEntityRepository.save(cardEntity);
 
-        CardResponseDTO response = cardMapper.toCardResponse(cardEntity);
-        idempotencyService.saveIdempotencyKey(idempotencyKey, response);
-
-        return response;
+        return cardEntityMapper.toCardResponse(cardEntity);
     }
 
+    @Transactional
     public CardResponseDTO updateCard(UpdateCardRequestDTO updateDto) {
         CardEntity cardEntity = cardEntityRepository.findByCardNumber(updateDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(updateDto.cardNumber()));
@@ -70,7 +74,7 @@ public class AdminCardFunctionService {
 
         cardEntity = cardEntityRepository.save(cardEntity);
 
-        return cardMapper.toCardResponse(cardEntity);
+        return cardEntityMapper.toCardResponse(cardEntity);
     }
 
     @Transactional
@@ -99,7 +103,7 @@ public class AdminCardFunctionService {
 
     @Transactional(readOnly = true)
     public List<CardResponseDTO> getAllCards() {
-        return cardEntityRepository.findAll().stream().map(cardMapper::toCardResponse).toList();
+        return cardEntityRepository.findAll().stream().map(cardEntityMapper::toCardResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -107,6 +111,6 @@ public class AdminCardFunctionService {
         CardEntity cardEntity = cardEntityRepository.findByCardNumber(cardDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(cardDto.cardNumber()));
 
-        return cardEntity.getHistory().stream().map(transactionMapper::toTransactionResponse).toList();
+        return cardEntity.getHistory().stream().map(transactionEntityMapper::toTransactionResponse).toList();
     }
 }

@@ -9,7 +9,7 @@
 
         <createSequence cycle="false" dataType="bigint" incrementBy="1" maxValue="9223372036854775807" minValue="1" sequenceName="customer_main_sequence" startValue="3"/>
 
-        <createTable tableName="customerEntity">
+        <createTable tableName="customer_entity">
             <column name="id" type="BIGINT">
                 <constraints primaryKey="true"/>
             </column>
@@ -56,7 +56,7 @@
             </column>
         </createTable>
 
-        <addForeignKeyConstraint baseTableName="customer_role" baseColumnNames="customer_id" constraintName="fk_customer_id" referencedTableName="customerEntity"
+        <addForeignKeyConstraint baseTableName="customer_role" baseColumnNames="customer_id" constraintName="fk_customer_id" referencedTableName="customer_entity"
                                  referencedColumnNames="id"/>
 
     </changeSet>

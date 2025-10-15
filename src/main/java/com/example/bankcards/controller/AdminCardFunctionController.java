@@ -39,10 +39,6 @@ public class AdminCardFunctionController {
     public CardResponseDTO createCard(@Valid @RequestBody CreateCardRequestDTO request,
                                       @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
 
-        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CardResponseDTO.class);
-        }
         return adminCardFunctionService.createCard(request, idempotencyKey);
     }
 

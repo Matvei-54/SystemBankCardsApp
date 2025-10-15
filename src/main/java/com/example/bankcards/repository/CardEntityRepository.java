@@ -16,9 +16,9 @@ import java.util.Optional;
 @Repository
 public interface CardEntityRepository extends JpaRepository<CardEntity, Long> {
 
-    Page<CardEntity> findByCustomerId(Long customerId, Pageable pageable);
+    Page<CardEntity> findByCustomerEntityId(Long customerId, Pageable pageable);
 
-    Page<CardEntity> findByCustomerIdAndStatus(Long customerId, CardStatus status, Pageable pageable);
+    Page<CardEntity> findByCustomerEntityIdAndStatus(Long customerId, CardStatus status, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(value = "SELECT c FROM CardEntity c WHERE c.cardNumber = :encryptedCardNumber")
