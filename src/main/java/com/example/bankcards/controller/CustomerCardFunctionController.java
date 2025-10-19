@@ -79,10 +79,10 @@ public class CustomerCardFunctionController {
     public TransactionResponseDTO transfer(@Valid @RequestBody TransferFundsBetweenUserCardsRequestDTO transferDto,
                                            @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
                                            HttpServletRequest request) {
-        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponseDTO.class);
-        }
+//        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
+//
+//            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponseDTO.class);
+//        }
         return cardFunctionService.transferBetweenCards(transferDto, idempotencyKey, jwtUtil.extractUsername(request
                 .getHeader("Authorization").substring(7)));
     }
@@ -99,9 +99,9 @@ public class CustomerCardFunctionController {
     public TransactionResponseDTO withdraw(@Valid @RequestBody WithdrawFundsRequestDTO withdrawDto,
                                            @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
                                            HttpServletRequest request) {
-        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponseDTO.class);
-        }
+//        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
+//            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponseDTO.class);
+//        }
         return cardFunctionService.withdrawalFromCard(withdrawDto, idempotencyKey, jwtUtil.extractUsername(request
                 .getHeader("Authorization").substring(7)));
     }
@@ -136,10 +136,10 @@ public class CustomerCardFunctionController {
                             @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
                             HttpServletRequest request){
 
-        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, String.class);
-        }
+//        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
+//
+//            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, String.class);
+//        }
         return cardFunctionService.requestCardBlock(blockCardDto, idempotencyKey,
                 jwtUtil.extractUsername(request.getHeader("Authorization").substring(7)));
     }
@@ -157,10 +157,10 @@ public class CustomerCardFunctionController {
                                                     @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
                                                     HttpServletRequest request){
 
-        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponseDTO.class);
-        }
+//        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
+//
+//            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, TransactionResponseDTO.class);
+//        }
         return cardFunctionService.cardReplenishment(replenishmentCardDto, idempotencyKey,
                 jwtUtil.extractUsername(request.getHeader("Authorization").substring(7)));
     }

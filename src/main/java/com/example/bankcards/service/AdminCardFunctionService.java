@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.security.*;
 import java.util.List;
 
 @Slf4j
@@ -35,13 +36,10 @@ public class AdminCardFunctionService {
     private final CardNumberEncryptorUtil cardEncryptorUtil;
 
 
-    @Cacheable(value = "idempotent:create-card", key = "#idempotencyKey", unless = "#result == null")
+    @Cacheable(value = "key:create-card", key = "#idempotencyKey", unless = "#result == null")
     @Transactional
-    public CardResponseDTO createCard(CreateCardRequestDTO createCardDto, String idempotencyKey) {
+    public CardResponseDTO createCard(CreateCardRequestDTO createCardDto, String idempotencyKey, Principal principal) {
 
-        if(idempotencyService.idempotencyKeyCheck(idempotencyKey)){
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CardResponseDTO.class);
-        }
 
         if(cardEntityRepository.findByCardNumber(createCardDto.cardNumber()).isPresent()) {
             throw new CardWithNumberAlreadyExistsException(createCardDto.cardNumber());

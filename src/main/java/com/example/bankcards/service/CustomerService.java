@@ -51,7 +51,7 @@ public class CustomerService {
         customerEntity.setEnabled(true);
         CustomerRegistrationResponseDTO response = customerEntityMapper
                 .toCustomerRegistrationResponse(customerEntityRepository.save(customerEntity));
-        idempotencyService.saveIdempotencyKey(idempotencyKey, response);
+        //idempotencyService.saveIdempotencyKey(idempotencyKey, response);
         return response;
     }
 

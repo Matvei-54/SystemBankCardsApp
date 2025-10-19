@@ -38,9 +38,9 @@ public class CustomerController {
     @PostMapping("/registration")
     public CustomerRegistrationResponseDTO customerRegistration(@Valid @RequestBody CustomerRegistrationRequestDTO customerReqDto,
                                                                 @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey){
-        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CustomerRegistrationResponseDTO.class);
-        }
+//        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
+//            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CustomerRegistrationResponseDTO.class);
+//        }
         return customerService.registerCustomer(customerReqDto, idempotencyKey);
     }
 }

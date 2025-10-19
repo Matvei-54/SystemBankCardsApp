@@ -5,6 +5,8 @@ import com.example.bankcards.service.AdminCardFunctionService;
 import com.example.bankcards.service.IdempotencyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.*;
+import org.springframework.security.core.context.*;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import javax.validation.Valid;
 import javax.validation.constraints.*;
+import java.security.*;
 
 @PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
@@ -37,9 +40,11 @@ public class AdminCardFunctionController {
     @Tag(name = "admin", description = "Card API")
     @PostMapping("/create")
     public CardResponseDTO createCard(@Valid @RequestBody CreateCardRequestDTO request,
-                                      @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
+                                      @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
+                                      Principal principal,
+                                      Authentication authentication) {
 
-        return adminCardFunctionService.createCard(request, idempotencyKey);
+        return adminCardFunctionService.createCard(request, idempotencyKey, principal);
     }
 
 
@@ -55,10 +60,10 @@ public class AdminCardFunctionController {
     public CardResponseDTO updateCard(@Valid @RequestBody UpdateCardRequestDTO request,
                                       @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
 
-        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
-
-            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CardResponseDTO.class);
-        }
+//        if (idempotencyService.idempotencyKeyCheck(idempotencyKey)) {
+//
+//            return idempotencyService.getResultByIdempotencyKey(idempotencyKey, CardResponseDTO.class);
+//        }
         return adminCardFunctionService.updateCard(request);
     }
 

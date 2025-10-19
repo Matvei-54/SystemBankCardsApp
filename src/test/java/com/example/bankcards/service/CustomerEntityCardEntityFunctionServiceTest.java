@@ -235,7 +235,7 @@ public class CustomerEntityCardEntityFunctionServiceTest {
 //        verify(transactionEntityRepository).save(any(TransactionEntity.class));
 //    }
 //
-//    @DisplayName("Недостаточно рседств для перервода.")
+//    @DisplayName("Недостаточно средств для перевода.")
 //    @Test
 //    void transferBetweenCards_InsufficientFunds_ThrowsException() {
 //        String fromCardNumber = "1234567890123456";

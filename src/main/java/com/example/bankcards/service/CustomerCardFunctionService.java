@@ -85,7 +85,7 @@ public class CustomerCardFunctionService {
         cardEntityRepository.save(cardEntity);
 
         String stringResultResponse = "Card has been blocked";
-        idempotencyService.saveIdempotencyKey(idempotencyKey, stringResultResponse);
+        //idempotencyService.saveIdempotencyKey(idempotencyKey, stringResultResponse);
         return stringResultResponse;
     }
 
@@ -104,7 +104,7 @@ public class CustomerCardFunctionService {
         List<TransactionResponseDTO> responses = transactionEntityRepository.findBySourceCardEntity(cardEntity, pageable)
                 .stream().map(transactionEntityMapper::toTransactionResponse).toList();
 
-        idempotencyService.saveIdempotencyKey(idempotencyKey, responses);
+        //idempotencyService.saveIdempotencyKey(idempotencyKey, responses);
         return responses;
     }
 
@@ -146,7 +146,7 @@ public class CustomerCardFunctionService {
         cardEntityRepository.save(cardEntityTo);
         TransactionResponseDTO response = transactionEntityMapper.toTransactionResponse(transactionEntityRepository.save(transferTransactionEntity));
 
-        idempotencyService.saveIdempotencyKey(idempotencyKey, response);
+        //idempotencyService.saveIdempotencyKey(idempotencyKey, response);
         return response;
 
     }
@@ -182,7 +182,7 @@ public class CustomerCardFunctionService {
         cardEntityRepository.save(cardEntityFrom);
 
         TransactionResponseDTO response = transactionEntityMapper.toTransactionResponse(transactionEntityRepository.save(withdrawTransactionEntity));
-        idempotencyService.saveIdempotencyKey(idempotencyKey, response);
+        //idempotencyService.saveIdempotencyKey(idempotencyKey, response);
 
         return response;
 
@@ -215,7 +215,7 @@ public class CustomerCardFunctionService {
 
         cardEntityRepository.save(cardEntity);
 
-        idempotencyService.saveIdempotencyKey(idempotencyKey, transactionResponseDTO);
+        //idempotencyService.saveIdempotencyKey(idempotencyKey, transactionResponseDTO);
         return transactionResponseDTO;
     }
 }
