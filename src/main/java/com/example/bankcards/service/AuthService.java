@@ -37,4 +37,14 @@ public class AuthService {
         String token = "jwt-token: " + jwtUtil.generateToken(customerDetails);
         return new AuthResponse(token);
     }
+
+    public long getCustomerId(){
+
+        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        CustomerEntity customer = customerEntityRepository.findByEmail(emailCustomer)
+                .orElseThrow(() -> new CustomerNotFoundException(emailCustomer));
+
+        return customer.getId();
+    }
 }

@@ -2,15 +2,11 @@ package com.example.bankcards.entity.operations;
 
 import com.example.bankcards.entity.*;
 import com.example.bankcards.entity.CardEntity;
-import com.example.bankcards.entity.enums.TransactionStatus;
-import com.example.bankcards.entity.enums.TransactionType;
+import com.example.bankcards.entity.enums.*;
 import com.example.bankcards.entity.enums.converter.TransactionStatusConverter;
 import com.example.bankcards.entity.enums.converter.TransactionTypeConverter;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 
@@ -19,6 +15,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Setter
 @Getter
+@Builder
 @Table(name = "transaction_entity")
 public class TransactionEntity extends BaseEntity {
 
@@ -29,7 +26,7 @@ public class TransactionEntity extends BaseEntity {
     private Long id;
 
     private BigDecimal amount;
-    private String currency;
+    private Currency currency;
 
     @Column(name = "transaction_status")
     @Convert(converter = TransactionStatusConverter.class)

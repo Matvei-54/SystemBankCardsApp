@@ -5,6 +5,7 @@ import com.example.bankcards.dto.transaction.TransactionResponseDTO;
 import com.example.bankcards.entity.enums.CardStatus;
 import com.example.bankcards.entity.CardEntity;
 
+import com.example.bankcards.entity.enums.Currency;
 import com.example.bankcards.entity.enums.TransactionStatus;
 import com.example.bankcards.entity.enums.TransactionType;
 import com.example.bankcards.entity.mapper.CardEntityMapper;
@@ -40,15 +41,12 @@ public class CustomerCardFunctionService {
     private final TransactionEntityRepository transactionEntityRepository;
     private final CardEntityMapper cardEntityMapper;
     private final TransactionEntityMapper transactionEntityMapper;
-    private final IdempotencyService idempotencyService;
+    private final AuthService authService;
 
     @Transactional(readOnly = true)
     public Page<CardResponseDTO> getCustomerCards(CardStatus status, int page, int size) {
 
-        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        Long idCustomer = customerService.findCustomerByEmail(emailCustomer)
-                .orElseThrow(()-> new CustomerNotFoundException(emailCustomer)).getId();
+        long idCustomer = authService.getCustomerId();
 
         Pageable pageable = PageRequest.of(page,size, Sort.by(Sort.Direction.ASC,"createdAt"));
         if(status != null){
@@ -62,12 +60,12 @@ public class CustomerCardFunctionService {
     @Transactional(readOnly = true)
     public CardResponseDTO getCustomerCard(String cartNumber) {
 
-        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        long idCustomer = authService.getCustomerId();
 
         CardEntity cardEntity = cardEntityRepository.findByCardNumber(cartNumber)
                 .orElseThrow(()-> new CardWithNumberNoExistsException(cartNumber));
 
-        if(!emailCustomer.equals(cardEntity.getCustomerEntity().getEmail())){
+        if(idCustomer != cardEntity.getCustomerEntity().getId()){
             throw new NoAccessToOtherDataException();
         }
 
@@ -120,12 +118,20 @@ public class CustomerCardFunctionService {
 
         String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        List<String> listCardNumberOrderByBlock = List.of(transferFundsDto.fromCardNumber(), transferFundsDto.toCardNumber());
-
-        CardEntity cardEntityFrom = cardEntityRepository.findByCardNumberWithLock(transferFundsDto.fromCardNumber())
+        CardEntity cardEntityOne = cardEntityRepository.findByCardNumber(transferFundsDto.fromCardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.fromCardNumber()));
 
-        CardEntity cardEntityTo = cardEntityRepository.findByCardNumberWithLock(transferFundsDto.toCardNumber())
+        CardEntity cardEntityTwo = cardEntityRepository.findByCardNumber(transferFundsDto.toCardNumber())
+                .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.toCardNumber()));
+
+        List<CardEntity> listCardNumberOrderByBlock = List.of(cardEntityOne, cardEntityTwo);
+
+        listCardNumberOrderByBlock.stream().sorted(Comparator.comparingLong(CardEntity::getId)).toList();
+
+        CardEntity cardEntityFrom = cardEntityRepository.findByCardNumberWithLock(listCardNumberOrderByBlock.get(0).getCardNumber())
+                .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.fromCardNumber()));
+
+        CardEntity cardEntityTo = cardEntityRepository.findByCardNumberWithLock(listCardNumberOrderByBlock.get(1).getCardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.toCardNumber()));
 
         if(!emailCustomer.equals(cardEntityFrom.getCustomerEntity().getEmail())){
@@ -143,13 +149,14 @@ public class CustomerCardFunctionService {
         cardEntityFrom.setBalance((cardEntityFrom.getBalance().subtract(transferFundsDto.amount())));
         cardEntityTo.setBalance(cardEntityTo.getBalance().add(transferFundsDto.amount()));
 
-        TransactionEntity transferTransactionEntity = new TransactionEntity();
-        transferTransactionEntity.setSourceCardEntity(cardEntityFrom);
-        transferTransactionEntity.setTargetCardEntity(cardEntityTo);
-        transferTransactionEntity.setAmount(transferFundsDto.amount());
-        transferTransactionEntity.setCurrency(transferFundsDto.currency());
-        transferTransactionEntity.setTransactionType(TransactionType.TRANSFER);
-        transferTransactionEntity.setTransactionStatus(TransactionStatus.SUCCESS);
+        TransactionEntity transferTransactionEntity = TransactionEntity.builder()
+                .sourceCardEntity(cardEntityFrom)
+                .targetCardEntity(cardEntityTo)
+                .amount(transferFundsDto.amount())
+                .currency(Currency.fromString(transferFundsDto.currency()))
+                .transactionType(TransactionType.TRANSFER)
+                .transactionStatus(TransactionStatus.SUCCESS)
+                .build();
 
         cardEntityRepository.save(cardEntityFrom);
         cardEntityRepository.save(cardEntityTo);
@@ -184,12 +191,13 @@ public class CustomerCardFunctionService {
 
         cardEntityFrom.setBalance(cardEntityFrom.getBalance().subtract(amountWithdraw));
 
-        TransactionEntity withdrawTransactionEntity = new TransactionEntity();
-        withdrawTransactionEntity.setSourceCardEntity(cardEntityFrom);
-        withdrawTransactionEntity.setAmount(withdrawDto.amount());
-        withdrawTransactionEntity.setCurrency(withdrawDto.currency());
-        withdrawTransactionEntity.setTransactionType(TransactionType.DEBIT);
-        withdrawTransactionEntity.setTransactionStatus(TransactionStatus.SUCCESS);
+        TransactionEntity withdrawTransactionEntity = TransactionEntity.builder()
+                .sourceCardEntity(cardEntityFrom)
+                .amount(amountWithdraw)
+                .currency(Currency.fromString(withdrawDto.currency()))
+                .transactionType(TransactionType.DEBIT)
+                .transactionStatus(TransactionStatus.SUCCESS)
+                .build();
 
         withdrawTransactionEntity = transactionEntityRepository.save(withdrawTransactionEntity);
 
@@ -215,14 +223,14 @@ public class CustomerCardFunctionService {
 
         cardEntity.setBalance(cardEntity.getBalance().add(replenishmentCardDto.amount()));
 
-        TransactionEntity replenishTransactionEntity = new TransactionEntity();
-        replenishTransactionEntity.setSourceCardEntity(cardEntity);
-        replenishTransactionEntity.setAmount(replenishmentCardDto.amount());
-        replenishTransactionEntity.setTransactionType(TransactionType.CREDIT);
-        replenishTransactionEntity.setTransactionStatus(TransactionStatus.SUCCESS);
-        replenishTransactionEntity.setCurrency("RUB");
+        TransactionEntity replenishTransactionEntity = TransactionEntity.builder()
+                .sourceCardEntity(cardEntity)
+                .amount(replenishmentCardDto.amount())
+                .transactionType(TransactionType.CREDIT)
+                .transactionStatus(TransactionStatus.SUCCESS)
+                .currency(Currency.fromString(replenishmentCardDto.currency()))
+                .build();
 
-        replenishTransactionEntity.getTransactionStatus().toString();
         replenishTransactionEntity = transactionEntityRepository.save(replenishTransactionEntity);
 
         TransactionResponseDTO transactionResponseDTO = transactionEntityMapper

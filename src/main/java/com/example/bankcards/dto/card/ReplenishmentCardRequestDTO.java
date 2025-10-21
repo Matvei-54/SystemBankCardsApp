@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public record ReplenishmentCardRequestDTO(
         String cardNumber,
-        BigDecimal amount
+        BigDecimal amount,
+        String currency
 ) {
 }

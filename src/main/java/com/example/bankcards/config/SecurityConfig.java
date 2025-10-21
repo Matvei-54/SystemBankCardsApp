@@ -41,8 +41,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(WHITE_LIST).permitAll()
                         .requestMatchers(WHITE_LIST_SWAGGER).permitAll()
-                        .requestMatchers("/api/admin/cards/**").hasRole("ADMIN")
-                        .requestMatchers("/api/cards/**").hasRole("USER")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
