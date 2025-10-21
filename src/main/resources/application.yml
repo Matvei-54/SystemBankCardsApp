@@ -44,7 +44,7 @@ card:
 
 logging:
   level:
-    com.ed.sysbankcards: INFO
+    com.example.bankcards: DEBUG
 
 cache:
   ttl: 3600

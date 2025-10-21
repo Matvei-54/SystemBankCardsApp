@@ -18,15 +18,17 @@ import com.example.bankcards.repository.CardEntityRepository;
 import com.example.bankcards.repository.TransactionEntityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -41,10 +43,12 @@ public class CustomerCardFunctionService {
     private final IdempotencyService idempotencyService;
 
     @Transactional(readOnly = true)
-    public Page<CardResponseDTO> getCustomerCards(String email, CardStatus status, int page, int size) {
+    public Page<CardResponseDTO> getCustomerCards(CardStatus status, int page, int size) {
 
-        Long idCustomer = customerService.findCustomerByEmail(email)
-                .orElseThrow(()-> new CustomerNotFoundException(email)).getId();
+        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        Long idCustomer = customerService.findCustomerByEmail(emailCustomer)
+                .orElseThrow(()-> new CustomerNotFoundException(emailCustomer)).getId();
 
         Pageable pageable = PageRequest.of(page,size, Sort.by(Sort.Direction.ASC,"createdAt"));
         if(status != null){
@@ -56,24 +60,28 @@ public class CustomerCardFunctionService {
     }
 
     @Transactional(readOnly = true)
-    public CardResponseDTO getCustomerCard(String cartNumber, String email) {
+    public CardResponseDTO getCustomerCard(String cartNumber) {
+
+        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         CardEntity cardEntity = cardEntityRepository.findByCardNumber(cartNumber)
                 .orElseThrow(()-> new CardWithNumberNoExistsException(cartNumber));
 
-        if(!email.equals(cardEntity.getCustomerEntity().getEmail())){
-            throw new NoAccessToOtherDataException();
-        }
+//        if(!email.equals(cardEntity.getCustomerEntity().getEmail())){
+//            throw new NoAccessToOtherDataException();
+//        }
 
         return cardEntityMapper.toCardResponse(cardEntity);
     }
 
     @Transactional
-    public String requestCardBlock(BlockCardRequestDTO blockCardDto, String idempotencyKey, String email) {
+    public void requestCardBlock(BlockCardRequestDTO blockCardDto, String idempotencyKey) {
         CardEntity cardEntity = cardEntityRepository.findByCardNumber(blockCardDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(blockCardDto.cardNumber()));
 
-        if(!email.equals(cardEntity.getCustomerEntity().getEmail())){
+        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if(!emailCustomer.equals(cardEntity.getCustomerEntity().getEmail())){
             throw new NoAccessToOtherDataException();
         }
 
@@ -84,34 +92,35 @@ public class CustomerCardFunctionService {
         cardEntity.setStatus(CardStatus.BLOCKED);
         cardEntityRepository.save(cardEntity);
 
-        String stringResultResponse = "Card has been blocked";
-        //idempotencyService.saveIdempotencyKey(idempotencyKey, stringResultResponse);
-        return stringResultResponse;
     }
 
     @Transactional(readOnly = true)
     public List<TransactionResponseDTO> getTransactionalByCard(ShowTransactionalByCardRequestDTO Dto,
-                                                               int page, int size, String idempotencyKey, String email) {
+                                                               int page, int size, String idempotencyKey) {
         CardEntity cardEntity = cardEntityRepository.findByCardNumber(Dto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(Dto.cardNumber()));
 
-        if(!email.equals(cardEntity.getCustomerEntity().getEmail())){
+        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if(!emailCustomer.equals(cardEntity.getCustomerEntity().getEmail())){
             throw new NoAccessToOtherDataException();
         }
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt"));
 
-        List<TransactionResponseDTO> responses = transactionEntityRepository.findBySourceCardEntity(cardEntity, pageable)
+        return transactionEntityRepository.findBySourceCardEntity(cardEntity, pageable)
                 .stream().map(transactionEntityMapper::toTransactionResponse).toList();
-
-        //idempotencyService.saveIdempotencyKey(idempotencyKey, responses);
-        return responses;
     }
 
 
+    @Cacheable(value = "key:transfer", key = "#idempotencyKey", unless = "#result == null")
     @Transactional
     public TransactionResponseDTO transferBetweenCards(TransferFundsBetweenUserCardsRequestDTO transferFundsDto,
-                                                       String idempotencyKey, String email) {
+                                                       String idempotencyKey) {
+
+        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        List<String> listCardNumberOrderByBlock = List.of(transferFundsDto.fromCardNumber(), transferFundsDto.toCardNumber());
 
         CardEntity cardEntityFrom = cardEntityRepository.findByCardNumberWithLock(transferFundsDto.fromCardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.fromCardNumber()));
@@ -119,7 +128,7 @@ public class CustomerCardFunctionService {
         CardEntity cardEntityTo = cardEntityRepository.findByCardNumberWithLock(transferFundsDto.toCardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.toCardNumber()));
 
-        if(!email.equals(cardEntityFrom.getCustomerEntity().getEmail())){
+        if(!emailCustomer.equals(cardEntityFrom.getCustomerEntity().getEmail())){
             throw new NoAccessToOtherDataException();
         }
 
@@ -151,12 +160,16 @@ public class CustomerCardFunctionService {
 
     }
 
+    @Cacheable(value = "key:withdrawal", key = "#idempotencyKey", unless = "#result == null")
     @Transactional
-    public TransactionResponseDTO withdrawalFromCard(WithdrawFundsRequestDTO withdrawDto, String idempotencyKey, String email){
+    public TransactionResponseDTO withdrawalFromCard(WithdrawFundsRequestDTO withdrawDto, String idempotencyKey){
+
         CardEntity cardEntityFrom = cardEntityRepository.findByCardNumberWithLock(withdrawDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(withdrawDto.cardNumber()));
 
-        if(!email.equals(cardEntityFrom.getCustomerEntity().getEmail())){
+        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if(!emailCustomer.equals(cardEntityFrom.getCustomerEntity().getEmail())){
             throw new NoAccessToOtherDataException();
         }
 
@@ -179,24 +192,25 @@ public class CustomerCardFunctionService {
         withdrawTransactionEntity.setTransactionType(TransactionType.DEBIT);
         withdrawTransactionEntity.setTransactionStatus(TransactionStatus.SUCCESS);
 
+        withdrawTransactionEntity = transactionEntityRepository.save(withdrawTransactionEntity);
+
         cardEntityRepository.save(cardEntityFrom);
 
-        TransactionResponseDTO response = transactionEntityMapper.toTransactionResponse(transactionEntityRepository.save(withdrawTransactionEntity));
-        //idempotencyService.saveIdempotencyKey(idempotencyKey, response);
-
-        return response;
+        return transactionEntityMapper.toTransactionResponse(withdrawTransactionEntity);
 
     }
 
+    @Cacheable(value = "key:replenishment", key = "#idempotencyKey", unless = "#result == null")
     @Transactional
-    public TransactionResponseDTO cardReplenishment(ReplenishmentCardRequestDTO replenishmentCardDto, String idempotencyKey,
-                                                    String email) {
+    public TransactionResponseDTO cardReplenishment(ReplenishmentCardRequestDTO replenishmentCardDto, String idempotencyKey) {
 
         CardEntity cardEntity = cardEntityRepository.findByCardNumberWithLock(replenishmentCardDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(replenishmentCardDto.cardNumber()));
 
-        log.info("Request email: {}, Card owner email: {}", email, cardEntity.getCustomerEntity().getEmail());
-        if(!email.equals(cardEntity.getCustomerEntity().getEmail())){
+        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        log.info("Request email: {}, Card owner email: {}", emailCustomer, cardEntity.getCustomerEntity().getEmail());
+        if(!emailCustomer.equals(cardEntity.getCustomerEntity().getEmail())){
             throw new NoAccessToOtherDataException();
         }
 
@@ -208,14 +222,15 @@ public class CustomerCardFunctionService {
         replenishTransactionEntity.setTransactionType(TransactionType.CREDIT);
         replenishTransactionEntity.setTransactionStatus(TransactionStatus.SUCCESS);
         replenishTransactionEntity.setCurrency("RUB");
-        TransactionResponseDTO transactionResponseDTO = transactionEntityMapper
-                .toTransactionResponse(transactionEntityRepository.save(replenishTransactionEntity));
 
         replenishTransactionEntity.getTransactionStatus().toString();
+        replenishTransactionEntity = transactionEntityRepository.save(replenishTransactionEntity);
+
+        TransactionResponseDTO transactionResponseDTO = transactionEntityMapper
+                .toTransactionResponse(replenishTransactionEntity);
 
         cardEntityRepository.save(cardEntity);
 
-        //idempotencyService.saveIdempotencyKey(idempotencyKey, transactionResponseDTO);
         return transactionResponseDTO;
     }
 }

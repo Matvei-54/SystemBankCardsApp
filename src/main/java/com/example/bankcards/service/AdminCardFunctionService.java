@@ -62,6 +62,7 @@ public class AdminCardFunctionService {
         return cardEntityMapper.toCardResponse(cardEntity);
     }
 
+    @Cacheable(value = "key:update-card", key = "#idempotencyKey", unless = "#result == null")
     @Transactional
     public CardResponseDTO updateCard(UpdateCardRequestDTO updateDto) {
         CardEntity cardEntity = cardEntityRepository.findByCardNumber(updateDto.cardNumber())
@@ -82,6 +83,7 @@ public class AdminCardFunctionService {
         cardEntity.setStatus(CardStatus.BLOCKED);
         cardEntityRepository.save(cardEntity);
     }
+
 
     @Transactional
     public void activateCard(ActivateCardRequestDTO activateCardDto, String idempotencyKey) {
