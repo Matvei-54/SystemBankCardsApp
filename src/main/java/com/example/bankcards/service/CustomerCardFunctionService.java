@@ -67,9 +67,9 @@ public class CustomerCardFunctionService {
         CardEntity cardEntity = cardEntityRepository.findByCardNumber(cartNumber)
                 .orElseThrow(()-> new CardWithNumberNoExistsException(cartNumber));
 
-//        if(!email.equals(cardEntity.getCustomerEntity().getEmail())){
-//            throw new NoAccessToOtherDataException();
-//        }
+        if(!emailCustomer.equals(cardEntity.getCustomerEntity().getEmail())){
+            throw new NoAccessToOtherDataException();
+        }
 
         return cardEntityMapper.toCardResponse(cardEntity);
     }
@@ -153,10 +153,9 @@ public class CustomerCardFunctionService {
 
         cardEntityRepository.save(cardEntityFrom);
         cardEntityRepository.save(cardEntityTo);
-        TransactionResponseDTO response = transactionEntityMapper.toTransactionResponse(transactionEntityRepository.save(transferTransactionEntity));
+        transferTransactionEntity = transactionEntityRepository.save(transferTransactionEntity);
 
-        //idempotencyService.saveIdempotencyKey(idempotencyKey, response);
-        return response;
+        return transactionEntityMapper.toTransactionResponse(transferTransactionEntity);
 
     }
 
