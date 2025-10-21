@@ -2,9 +2,7 @@ package com.example.bankcards.entity;
 
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.List;
@@ -12,9 +10,11 @@ import java.util.Set;
 
 @Entity
 @NoArgsConstructor
+@AllArgsConstructor
 @Setter
 @Getter
 @Table(name = "customer_entity")
+@Builder
 public class CustomerEntity extends BaseEntity {
 
     @Id

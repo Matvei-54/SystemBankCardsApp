@@ -9,6 +9,7 @@ import com.example.bankcards.repository.CustomerEntityRepository;
 import com.example.bankcards.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.*;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,14 +26,13 @@ public class CustomerService {
     private final CustomerEntityMapper customerEntityMapper;
     private final RoleRepository roleRepository;
     private final Argon2PasswordEncoder argon2PasswordEncoder;
-    private final IdempotencyService idempotencyService;
-    private final long TIME_LIFE_RECORD_DB = 3600;
 
 
     /**
      * Метод создание пользователя
      * @return dto зарегистрированного пользователя
      */
+    @Cacheable(value = "key:register", key = "#idempotencyKey", unless = "#result == null")
     @Transactional
     public CustomerRegistrationResponseDTO registerCustomer(CustomerRegistrationRequestDTO customerDto, String idempotencyKey) {
         if(customerEntityRepository.findByEmail(customerDto.email()).isPresent()) {
@@ -40,19 +40,20 @@ public class CustomerService {
             throw new CustomerAlreadyRegisteredException(customerDto.email());
         }
 
-        CustomerEntity customerEntity = new CustomerEntity();
-        customerEntity.setEmail(customerDto.email());
-        customerEntity.setPassword(argon2PasswordEncoder.encode(customerDto.password()));
-        customerEntity.setName(customerDto.name());
-        customerEntity.setRoles(Collections.singleton(roleRepository.findByName("USER").get()));
-        customerEntity.setAccountNonExpired(true);
-        customerEntity.setAccountNonLocked(true);
-        customerEntity.setCredentialsNonExpired(true);
-        customerEntity.setEnabled(true);
-        CustomerRegistrationResponseDTO response = customerEntityMapper
-                .toCustomerRegistrationResponse(customerEntityRepository.save(customerEntity));
-        //idempotencyService.saveIdempotencyKey(idempotencyKey, response);
-        return response;
+        CustomerEntity customerEntity = CustomerEntity.builder()
+                        .email(customerDto.email())
+                        .password(argon2PasswordEncoder.encode(customerDto.password()))
+                        .name(customerDto.name())
+                        .roles(Collections.singleton(roleRepository.findByName("USER").get()))
+                        .isAccountNonExpired(true)
+                        .isAccountNonExpired(true)
+                        .isCredentialsNonExpired(true)
+                        .isEnabled(true)
+                        .build();
+
+        customerEntity = customerEntityRepository.save(customerEntity);
+
+        return customerEntityMapper.toCustomerRegistrationResponse(customerEntity);
     }
 
     @Transactional(readOnly = true)
