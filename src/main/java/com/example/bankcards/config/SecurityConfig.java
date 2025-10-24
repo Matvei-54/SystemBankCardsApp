@@ -52,14 +52,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-//    @Bean
-//    public DaoAuthenticationProvider authProvider(UserDetailsService userDetailsService, Argon2PasswordEncoder passwordEncoder) {
-//        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-//        provider.setUserDetailsService(userDetailsService);
-//        provider.setPasswordEncoder(passwordEncoder);
-//        return provider;
-//    }
-
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();

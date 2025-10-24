@@ -10,8 +10,6 @@ import com.example.bankcards.exception.card.CardWithNumberAlreadyExistsException
 import com.example.bankcards.exception.card.CardWithNumberNoExistsException;
 import com.example.bankcards.exception.customer.CustomerNotFoundException;
 import com.example.bankcards.repository.CardEntityRepository;
-import com.example.bankcards.repository.TransactionEntityRepository;
-import com.example.bankcards.util.CardNumberEncryptorUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.*;
@@ -25,20 +23,17 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class AdminCardFunctionService {
+public class AdminCardService {
 
     private final CardEntityRepository cardEntityRepository;
     private final CustomerService customerService;
     private final CardEntityMapper cardEntityMapper;
-    private final TransactionEntityRepository transactionEntityRepository;
     private final TransactionEntityMapper transactionEntityMapper;
-    private final IdempotencyService idempotencyService;
-    private final CardNumberEncryptorUtil cardEncryptorUtil;
 
 
     @Cacheable(value = "key:create-card", key = "#idempotencyKey", unless = "#result == null")
     @Transactional
-    public CardResponseDTO createCard(CreateCardRequestDTO createCardDto, String idempotencyKey, Principal principal) {
+    public CardResponseDTO createCard(CreateCardRequestDTO createCardDto, String idempotencyKey) {
 
 
         if(cardEntityRepository.findByCardNumber(createCardDto.cardNumber()).isPresent()) {

@@ -3,21 +3,12 @@ package com.example.bankcards.controller;
 
 import com.example.bankcards.dto.card.*;
 import com.example.bankcards.dto.transaction.TransactionResponseDTO;
-import com.example.bankcards.entity.app_class.*;
 import com.example.bankcards.entity.enums.CardStatus;
-import com.example.bankcards.security.*;
-import com.example.bankcards.service.CustomerCardFunctionService;
-import com.example.bankcards.service.IdempotencyService;
-import com.sun.security.auth.*;
-import jakarta.servlet.http.*;
+import com.example.bankcards.service.CustomerCardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.*;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.*;
-import org.springframework.security.core.annotation.*;
-import org.springframework.security.core.context.*;
-import org.springframework.security.core.userdetails.*;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,31 +23,30 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
-import java.security.*;
 import java.util.List;
 
+@Tag(
+        name = "Customer Card Management",
+        description = "Операции клиента с картами — просмотр, переводы, пополнение, вывод и блокировка."
+)
 @Slf4j
-@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
 @RequiredArgsConstructor
 @RequestMapping("/api/cards")
 @RestController
-public class CustomerCardFunctionController {
+public class CustomerCardController {
 
-    private final CustomerCardFunctionService cardFunctionService;
-    private final IdempotencyService idempotencyService;
-    private final JwtUtil jwtUtil;
+    private final CustomerCardService cardFunctionService;
 
     /**
      * Запрос получений данных карты
      * @param cardNumber номер карты
      * @return dto данных карты
      */
-    @Operation(summary = "Получить данные карты", description = "В ответе возвращается dto.")
-    @Tag(name = "get", description = "Card API")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @Operation(summary = "Получить данные карты",
+            description = "Возвращает детальную информацию по карте по указанному номеру карты.")
     @GetMapping("/get/{cardNumber}")
     public CardResponseDTO getCard(@PathVariable String cardNumber) {
-
-        String stringName = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         return cardFunctionService.getCustomerCard(cardNumber);
     }
@@ -64,8 +54,9 @@ public class CustomerCardFunctionController {
     /**
      * Запрос на получение всех карт по статусу и пагинацией
      */
-    @Operation(summary = "Получить список карт", description = "В ответе возвращается List dto.")
-    @Tag(name = "get", description = "Card API")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @Operation(summary = "Получить список карт",
+            description = "Возвращает список карт пользователя с возможностью фильтрации по статусу и пагинации.")
     @GetMapping()
     public Page<CardResponseDTO> getCards(
             @RequestParam(required = false) CardStatus status,
@@ -81,8 +72,9 @@ public class CustomerCardFunctionController {
      * @param idempotencyKey
      * @return dto транзакции
      */
-    @Operation(summary = "Выполнить перевод между своими картами", description = "В ответе возвращается dto перевода.")
-    @Tag(name = "post", description = "Card API")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @Operation(summary = "Перевести средства между своими картами",
+            description = "Выполняет перевод между картами текущего пользователя и возвращает данные транзакции.")
     @PostMapping("/transfer")
     public TransactionResponseDTO transfer(@Valid @RequestBody TransferFundsBetweenUserCardsRequestDTO transferDto,
                                            @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
@@ -96,8 +88,9 @@ public class CustomerCardFunctionController {
      * @param idempotencyKey
      * @return dto транзакции
      */
-    @Operation(summary = "Выполнить вывод средств с карты", description = "В ответе возвращается dto транзакции вывода.")
-    @Tag(name = "post", description = "Card API")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @Operation(summary = "Вывести средства с карты",
+            description = "Выполняет вывод средств с карты пользователя и возвращает данные транзакции.")
     @PostMapping("/withdraw")
     public TransactionResponseDTO withdraw(@Valid @RequestBody WithdrawFundsRequestDTO withdrawDto,
                                            @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey) {
@@ -109,8 +102,9 @@ public class CustomerCardFunctionController {
      * Запрос получения всех транзакций по карте
      * @return лист dto траназакций
      */
-    @Operation(summary = "Получить список транзакций по карте", description = "В ответе возвращается List dto транзакций.")
-    @Tag(name = "get", description = "Card API")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @Operation(summary = "Получить список транзакций по карте",
+            description = "Возвращает историю транзакций по указанной карте с пагинацией.")
     @GetMapping("/transactions")
     public List<TransactionResponseDTO> getTransactions(
             @RequestParam(defaultValue = "0") int page,
@@ -126,8 +120,9 @@ public class CustomerCardFunctionController {
      * @param idempotencyKey
      * @return Строка с ответом
      */
-    @Operation(summary = "Заблокировать карту", description = "В ответе ничего не возвращается.")
-    @Tag(name = "put", description = "Card API")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @Operation(summary = "Заблокировать карту",
+            description = "Переводит карту в заблокированное состояние. Возвращаемого значения нет.")
     @PutMapping("/block")
     public void blockCard(@Valid @RequestBody BlockCardRequestDTO blockCardDto,
                             @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey){
@@ -141,8 +136,9 @@ public class CustomerCardFunctionController {
      * @param idempotencyKey
      * @return dto транзакции
      */
-    @Operation(summary = "Пополнить баланс карты", description = "В ответе ничего не возвращается.")
-    @Tag(name = "put", description = "Card API")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @Operation(summary = "Пополнить баланс карты",
+            description = "Пополняет баланс карты пользователя и возвращает данные транзакции.")
     @PutMapping("/replenishment")
     public TransactionResponseDTO replenishmentCard(@Valid @RequestBody ReplenishmentCardRequestDTO replenishmentCardDto,
                                                     @RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey){

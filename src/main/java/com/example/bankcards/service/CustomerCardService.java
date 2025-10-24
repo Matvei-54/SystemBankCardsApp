@@ -24,7 +24,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.core.context.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,10 +33,9 @@ import java.util.*;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class CustomerCardFunctionService {
+public class CustomerCardService {
 
     private final CardEntityRepository cardEntityRepository;
-    private final CustomerService customerService;
     private final TransactionEntityRepository transactionEntityRepository;
     private final CardEntityMapper cardEntityMapper;
     private final TransactionEntityMapper transactionEntityMapper;
@@ -77,9 +75,9 @@ public class CustomerCardFunctionService {
         CardEntity cardEntity = cardEntityRepository.findByCardNumber(blockCardDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(blockCardDto.cardNumber()));
 
-        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        long idCustomer = authService.getCustomerId();
 
-        if(!emailCustomer.equals(cardEntity.getCustomerEntity().getEmail())){
+        if(idCustomer != cardEntity.getCustomerEntity().getId()){
             throw new NoAccessToOtherDataException();
         }
 
@@ -98,9 +96,9 @@ public class CustomerCardFunctionService {
         CardEntity cardEntity = cardEntityRepository.findByCardNumber(Dto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(Dto.cardNumber()));
 
-        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        long idCustomer = authService.getCustomerId();
 
-        if(!emailCustomer.equals(cardEntity.getCustomerEntity().getEmail())){
+        if(idCustomer != cardEntity.getCustomerEntity().getId()){
             throw new NoAccessToOtherDataException();
         }
 
@@ -116,25 +114,22 @@ public class CustomerCardFunctionService {
     public TransactionResponseDTO transferBetweenCards(TransferFundsBetweenUserCardsRequestDTO transferFundsDto,
                                                        String idempotencyKey) {
 
-        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        long idCustomer = authService.getCustomerId();
 
-        CardEntity cardEntityOne = cardEntityRepository.findByCardNumber(transferFundsDto.fromCardNumber())
+        List<String> listCardNumberOrderByBlock = List.of(transferFundsDto.fromCardNumber(), transferFundsDto.toCardNumber());
+
+        listCardNumberOrderByBlock.stream().sorted().toList();
+
+        CardEntity firstCard = cardEntityRepository.findByCardNumberWithLock(listCardNumberOrderByBlock.get(0))
                 .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.fromCardNumber()));
 
-        CardEntity cardEntityTwo = cardEntityRepository.findByCardNumber(transferFundsDto.toCardNumber())
+        CardEntity secondCard = cardEntityRepository.findByCardNumberWithLock(listCardNumberOrderByBlock.get(1))
                 .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.toCardNumber()));
 
-        List<CardEntity> listCardNumberOrderByBlock = List.of(cardEntityOne, cardEntityTwo);
+        CardEntity cardEntityFrom = firstCard.getCardNumber().equals(transferFundsDto.fromCardNumber()) ? firstCard : secondCard;
+        CardEntity cardEntityTo = cardEntityFrom == firstCard ? secondCard : firstCard;
 
-        listCardNumberOrderByBlock.stream().sorted(Comparator.comparingLong(CardEntity::getId)).toList();
-
-        CardEntity cardEntityFrom = cardEntityRepository.findByCardNumberWithLock(listCardNumberOrderByBlock.get(0).getCardNumber())
-                .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.fromCardNumber()));
-
-        CardEntity cardEntityTo = cardEntityRepository.findByCardNumberWithLock(listCardNumberOrderByBlock.get(1).getCardNumber())
-                .orElseThrow(()-> new CardWithNumberNoExistsException(transferFundsDto.toCardNumber()));
-
-        if(!emailCustomer.equals(cardEntityFrom.getCustomerEntity().getEmail())){
+        if(idCustomer != cardEntityFrom.getCustomerEntity().getId()){
             throw new NoAccessToOtherDataException();
         }
 
@@ -173,9 +168,9 @@ public class CustomerCardFunctionService {
         CardEntity cardEntityFrom = cardEntityRepository.findByCardNumberWithLock(withdrawDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(withdrawDto.cardNumber()));
 
-        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        long idCustomer = authService.getCustomerId();
 
-        if(!emailCustomer.equals(cardEntityFrom.getCustomerEntity().getEmail())){
+        if(idCustomer != cardEntityFrom.getCustomerEntity().getId()){
             throw new NoAccessToOtherDataException();
         }
 
@@ -214,10 +209,9 @@ public class CustomerCardFunctionService {
         CardEntity cardEntity = cardEntityRepository.findByCardNumberWithLock(replenishmentCardDto.cardNumber())
                 .orElseThrow(()-> new CardWithNumberNoExistsException(replenishmentCardDto.cardNumber()));
 
-        String emailCustomer = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        long idCustomer = authService.getCustomerId();
 
-        log.info("Request email: {}, Card owner email: {}", emailCustomer, cardEntity.getCustomerEntity().getEmail());
-        if(!emailCustomer.equals(cardEntity.getCustomerEntity().getEmail())){
+        if(idCustomer != cardEntity.getCustomerEntity().getId()){
             throw new NoAccessToOtherDataException();
         }
 
